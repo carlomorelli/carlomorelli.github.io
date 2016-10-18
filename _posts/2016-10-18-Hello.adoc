@@ -1,0 +1,8 @@
+= Hello
+:hp-tags: none
+
+So finally I get my developer's blog.
+
+I will be using https://www.hubpress.io[Hubpress.io]. It is a cool concept, let's see how it goes. 
+
+Stay tuned.
