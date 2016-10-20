@@ -28,9 +28,12 @@ For my project, I use the official Jetty image from the Dockerhub onto which I t
 This is what my Dockerfile *would* be:
 
 -------------------
-
-
+FROM jetty:9.3.12-jre8
+COPY mywarfile.war /opt/jetty/webapps/
+ENTRYPOINT ["java", "-jar", "/opt/jetty/start.jar"]
 -------------------
+
+You will see now how to produce the Docker image without needing any Dockerfile at all.
 
 === Configuration
 Let's see how to configure the plugin in the project's pom.xml: 
@@ -63,6 +66,8 @@ Let's see how to configure the plugin in the project's pom.xml:
   </configuration>
 </plugin>
 -------------------
+
+As you can see the parameters resemble pretty much the intended Dockerfile.
 
 Notice that the *server_entry* is the label of an entry that you have to insert into your local ~/.m2/settings.xml as such:
 
