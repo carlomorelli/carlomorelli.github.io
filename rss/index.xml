@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Thu, 20 Oct 2016 09:09:49 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Thu, 20 Oct 2016 09:10:40 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>I have been working for 6 months in a new Java/Maven project in my company. It is quite exciting, we do a lot of cutting-edge technology and of course we use massively Jenkins for continous integration.</p>
@@ -148,7 +148,7 @@ There is a residual parameter which is <code>${myimage.build}</code> which in my
 </div>
 </div>
 <div class="paragraph">
-<p>(You can check this out with <code>docker ps -a command</code>). The <code>0.0.1-SNAPSHOT</code> part here simply comes from the version of your project (on top of your <code>pom.xml</code> file), so it can be totally different in your case, of course.</p>
+<p>(You can check this out with <code>docker ps -a</code> command). The <code>0.0.1-SNAPSHOT</code> part here simply comes from the version of your project (on top of your <code>pom.xml</code> file), so it can be totally different in your case, of course.</p>
 </div>
 <div class="paragraph">
 <p>To push this image to artifactory, we simply need to add a push command to the command line:</p>
