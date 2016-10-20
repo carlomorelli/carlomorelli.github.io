@@ -10,8 +10,29 @@ The test framework targets Amazon Web Services and from day1 we decided to have 
 
 So I took myself the task to improve our workflow, thanks also to our DevOps specialist who explained me a lot of nuts'n'bolts of Docker.
 
-At one point it was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful Docker-maven-plugin by Spotify (check it out [on their github repo](https://github.com/spotify/docker-maven-plugin) ) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.
+At one point it was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful *Docker-maven-plugin* by *Spotify* (check it out on https://github.com/spotify/docker-maven-plugin[their github repo]) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.
 
+=== Prerequisites
+Your Artifactory should have been enabled to run as a "Docker Registry". This basically means that we are able to push and pull images to and from it. 
+
+The biggest example of a docker registry is the official https://hub.docker.com/[Docker Hub] where lots of mainstream porjects publish their public images.
+
+Talk to your network administrator for all the concerns about it. You can also experiment by creating a Docker registry on your local machine while waiting for the IT guys to answer (it uusally takes some time :P ). More informations on the Docker registry can be found in the Docker guides.
+
+Second big point is, what kind of disk space on Artifactory do you have and what bandwidth availability. A well built Docker image should not require much more than a WAR/JAR artifact takes in terms of size and upload speed, but  this requires some tuning.
+
+Long story short: the instruction order in your Dockerfile matters! Every line is a "layer" that Docker creates as basis for the next line, until you reach the end of the Dockerfile and the final image is done.
+
+For my project, I use the official Jetty image from the Dockerhub onto which I then put my WAR, and produce a new image that I then upload to our private Artifactory.
+
+This is what my Dockerfile *would* be:
+
+-------------------
+
+
+-------------------
+
+=== Configuration
 Let's see how to configure the plugin in the project's pom.xml: 
 
 
@@ -59,6 +80,7 @@ Notice that the *server_entry* is the label of an entry that you have to insert 
 
 Strangely enough the email field is *mandatory* for the current version of the spotify Docker-maven-plugin to work correctly, so watch out!
 
+=== Usage
 You can see that what I put in the pom.xml is parametrized by some automatic Maven variables (they look like ${something}).
 There is a residual parameter which is ${myimage.build} which in my case does not come from Maven internals, but from the command line: you can run the docker image generation like this:
 
