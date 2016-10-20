@@ -57,4 +57,17 @@ Notice that the *server_entry* is the label of an entry that you have to insert 
 
 Strangely enough the email field is *mandatory* for the current version of the spotify Docker-maven-plugin to work correctly, so watch out!
 
+You can see that what I put in the pom.xml is parametrized by some automatic Maven variables (they look like ${something}).
+There is a residual parameter which is ${myimage.build} which in my case does not come from Maven internals, but from the command line: you can run the docker image generation like this:
 
+mvn docker:build -Dmyimage.build=12345
+
+and this will result in a Docker image created locally with tag
+
+artifactory.mycompany.net/applications/myapp:0.0.1-SNAPSHOT-12345
+
+(You can check this out with docker ps -a command). The "0.0.1-SNAPSHOT" part here simply comes from the <version> block in your pom.xml file, so it can be totally different in your case, of course.
+
+To push this image to artifactory, we simply need to add a push command to the command line:
+
+mvn docker:build -Dmyimage.build=12345 -DpushImage
