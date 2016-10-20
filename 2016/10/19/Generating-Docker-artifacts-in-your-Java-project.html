@@ -12,7 +12,7 @@
 
     <link rel="shortcut icon" href="https://carlomorelli.github.io/favicon.ico">
 
-    <link rel="stylesheet" type="text/css" href="//carlomorelli.github.io/themes/casper/assets/css/screen.css?v=1476954640219" />
+    <link rel="stylesheet" type="text/css" href="//carlomorelli.github.io/themes/casper/assets/css/screen.css?v=1476968749397" />
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
 
     <link rel="canonical" href="https://carlomorelli.github.io/2016/10/19/Generating-Docker-artifacts-in-your-Java-project.html" />
@@ -71,10 +71,10 @@ null
 <p>I have been working for 6 months in a new Java/Maven project in my company. It is quite exciting, we do a lot of cutting-edge technology and of course we use massively Jenkins for continous integration.</p>
 </div>
 <div class="paragraph">
-<p>One of the problems that we started facing at one point is <strong>what</strong> to deliver. We were used to publish our WAR artifact to Artifactory, where it layed there to gain dust. Then our integration-test framework would run immediately after the build (triggered by <code>mvn integration-test</code>), and instead of retrieving the artifact, would use a new build run to generate the WAR in the target/ dir.</p>
+<p>One of the problems that we started facing at one point is <strong>what</strong> to deliver. We were used to publish our WAR artifact to Artifactory, where it unfortunately layed there gaining only dust. Then our integration-test framework would run immediately after the build (triggered by <code>mvn integration-test</code>), and instead of retrieving the artifact, would use a new build run to generate the WAR in the <code>target/</code> dir and start from there.</p>
 </div>
 <div class="paragraph">
-<p>The test framework targets Amazon Web Services and from day1 we decided to have everything dockerized. So the deployment script would do the following:</p>
+<p>The test framework targets Amazon Web Services and from the Day One we decided to have everything dockerized. So the deployment script would do the following:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -82,10 +82,10 @@ null
 <p>build the WAR file again</p>
 </li>
 <li>
-<p>copy it to the AWS target environment</p>
+<p>stream it to the AWS target environment using the target Docker&#8217;s REST API (ugh, really: we streamed a ByteArray of 16 Mb of data&#8201;&#8212;&#8201;more or less&#8201;&#8212;&#8201;in HTTP rest requests)</p>
 </li>
 <li>
-<p>on AWS, pull the Jetty base image</p>
+<p>on AWS, pull the Jetty base image from Docker hub</p>
 </li>
 <li>
 <p>on AWS, package a new image</p>
@@ -96,13 +96,13 @@ null
 </ol>
 </div>
 <div class="paragraph">
-<p>This is clearly not very efficient. We have a lot of tools at our avaiablity (Artifactory in primis) but we are not able to make them work efficently.</p>
+<p>This is clearly not very efficient. We have a lot of tools at our avaiablity (Artifactory in primis) but we are not able to make them work in a meaningful way.</p>
 </div>
 <div class="paragraph">
 <p>So I took myself the task to improve our workflow, thanks also to our DevOps specialist who explained me a lot of nuts&#8217;n&#8217;bolts of Docker.</p>
 </div>
 <div class="paragraph">
-<p>At one point it was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful <strong>Docker-maven-plugin</strong> by <strong>Spotify</strong> (check it out on <a href="https://github.com/spotify/docker-maven-plugin">their github repo</a>) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.</p>
+<p>It was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful <strong>Docker-maven-plugin</strong> by <strong>Spotify</strong> (check it out on <a href="https://github.com/spotify/docker-maven-plugin">their github repo</a>) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.</p>
 </div>
 </div>
 </div>
@@ -118,13 +118,18 @@ null
 <p>Talk to your network administrator for all the concerns about it. You can also experiment by creating a Docker registry on your local machine while waiting for the IT guys to answer (it usally takes some time :P ). More informations on the Docker registry can be found in the Docker guides.</p>
 </div>
 <div class="paragraph">
-<p>Second big point is, what kind of disk space on Artifactory do you have and what bandwidth availability. A well built Docker image should not require much more than a WAR/JAR artifact takes in terms of size and upload speed, but  this requires some tuning.</p>
+<p>Second big point is, what kind of disk space on Artifactory do you have and what bandwidth availability. A well built Docker image should not require much more than a WAR/JAR artifact takes in terms of size and upload speed, but some tuning may be needed. My suggestion: try, try and retry. Docker is not easy to understand at the beginning.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_efficiency_in_docker_images_creation">Efficiency in Docker images creation</h3>
+<div class="paragraph">
+<p>Long story short: the instruction order in your Dockerfile matters! Every line is a "layer" that Docker creates as basis for the next line, until you reach the end of the Dockerfile and the final image is done.
+The Docker Registry you use is a smart service, and if it founds out that some layers that the Docker image you are pushing are already pre-existing in its own belly, it will move on to the next layer (a.k.a. the next line of the Dockerfile) directly. This means that you want to add the WAR/JAR object in the image creation as later as possible, so that a large portion of the final image is in common with other builds of your project.</p>
 </div>
 <div class="paragraph">
-<p>Long story short: the instruction order in your Dockerfile matters! Every line is a "layer" that Docker creates as basis for the next line, until you reach the end of the Dockerfile and the final image is done.</p>
-</div>
-<div class="paragraph">
-<p>For my project, I use the official Jetty image from the Dockerhub onto which I then put my WAR, and produce a new image that I then upload to our private Artifactory.</p>
+<p>For my project, I use the official Jetty image from the Docker Hub onto which I then put my WAR, and produce a new image that I then upload to our private Artifactory registry.
+We achieved a delta factor between a new build and the previous build of about 31 Mbytes, whereas our WAR file weights about 26 Mbytes. Pretty neat!</p>
 </div>
 <div class="paragraph">
 <p>This is what my Dockerfile <strong>would</strong> be:</p>
@@ -132,12 +137,12 @@ null
 <div class="listingblock">
 <div class="content">
 <pre>FROM jetty:9.3.12-jre8
-COPY mywarfile.war /opt/jetty/webapps/
+COPY mywarfile-build12345.war /opt/jetty/webapps/   # this line differentiates the images one another
 ENTRYPOINT ["java", "-jar", "/opt/jetty/start.jar"]</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You will see now how to produce the Docker image without needing any Dockerfile at all.</p>
+<p>You will see now how to produce the Docker image without needing any Dockerfile at all using Spotify&#8217;s Docker maven plugin.</p>
 </div>
 </div>
 <div class="sect2">
@@ -229,7 +234,7 @@ There is a residual parameter which is <code>${myimage.build}</code> which in my
 <p>That&#8217;s it.</p>
 </div>
 <div class="paragraph">
-<p>If you use Jenkins CI like in my case, it is easy to inject the ${myimage.build} value from the Jenkins built-in variable BUILD_NUMBER, so every successful job run will automatically push a different image version on Artifactory. Or you could just forget about it and remove the versioning entirely, and only use the "latest" tag (this is automatically managed by the Docker-maven-plugin again): your choice :)</p>
+<p>If you use Jenkins CI like in my case, it is easy to inject the <code>${myimage.build}</code> value from the Jenkins built-in variable <code>$BUILD_NUMBER</code>, so every successful job run will automatically push a different image version on Artifactory. Or you could just forget about it and remove the versioning entirely, and only use the <code>latest</code> tag (this is automatically managed by the Docker-maven-plugin again). Your choice :)</p>
 </div>
 <div class="paragraph">
 <p>Have fun!</p>
@@ -304,8 +309,8 @@ There is a residual parameter which is <code>${myimage.build}</code> which in my
         hljs.initHighlightingOnLoad();
       </script>
 
-    <script type="text/javascript" src="//carlomorelli.github.io/themes/casper/assets/js/jquery.fitvids.js?v=1476954640219"></script>
-    <script type="text/javascript" src="//carlomorelli.github.io/themes/casper/assets/js/index.js?v=1476954640219"></script>
+    <script type="text/javascript" src="//carlomorelli.github.io/themes/casper/assets/js/jquery.fitvids.js?v=1476968749397"></script>
+    <script type="text/javascript" src="//carlomorelli.github.io/themes/casper/assets/js/index.js?v=1476968749397"></script>
 
 </body>
 </html>
