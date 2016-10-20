@@ -1,4 +1,173 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Tue, 18 Oct 2016 18:46:12 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Hello]]></title><description><![CDATA[<div class="paragraph">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Thu, 20 Oct 2016 09:09:49 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>I have been working for 6 months in a new Java/Maven project in my company. It is quite exciting, we do a lot of cutting-edge technology and of course we use massively Jenkins for continous integration.</p>
+</div>
+<div class="paragraph">
+<p>One of the problems that we started facing at one point is <strong>what</strong> to deliver. We were used to publish our WAR artifact to Artifactory, where it layed there to gain dust. Then our integration-test framework would run immediately after the build (triggered by <code>mvn integration-test</code>), and instead of retrieving the artifact, would use a new build run to generate the WAR in the target/ dir.</p>
+</div>
+<div class="paragraph">
+<p>The test framework targets Amazon Web Services and from day1 we decided to have everything dockerized. So the deployment script would do the following:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>build the WAR file again</p>
+</li>
+<li>
+<p>copy it to the AWS target environment</p>
+</li>
+<li>
+<p>on AWS, pull the Jetty base image</p>
+</li>
+<li>
+<p>on AWS, package a new image</p>
+</li>
+<li>
+<p>on AWS, spawn the container (together together with other ancillary services)</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This is clearly not very efficient. We have a lot of tools at our avaiablity (Artifactory in primis) but we are not able to make them work efficently.</p>
+</div>
+<div class="paragraph">
+<p>So I took myself the task to improve our workflow, thanks also to our DevOps specialist who explained me a lot of nuts&#8217;n&#8217;bolts of Docker.</p>
+</div>
+<div class="paragraph">
+<p>At one point it was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful <strong>Docker-maven-plugin</strong> by <strong>Spotify</strong> (check it out on <a href="https://github.com/spotify/docker-maven-plugin">their github repo</a>) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites">Prerequisites</h3>
+<div class="paragraph">
+<p>Your Artifactory should have been enabled to run as a "Docker Registry". This basically means that we are able to push and pull images to and from it.</p>
+</div>
+<div class="paragraph">
+<p>The biggest example of a docker registry is the official <a href="https://hub.docker.com/">Docker Hub</a> where lots of mainstream porjects publish their public images.</p>
+</div>
+<div class="paragraph">
+<p>Talk to your network administrator for all the concerns about it. You can also experiment by creating a Docker registry on your local machine while waiting for the IT guys to answer (it usally takes some time :P ). More informations on the Docker registry can be found in the Docker guides.</p>
+</div>
+<div class="paragraph">
+<p>Second big point is, what kind of disk space on Artifactory do you have and what bandwidth availability. A well built Docker image should not require much more than a WAR/JAR artifact takes in terms of size and upload speed, but  this requires some tuning.</p>
+</div>
+<div class="paragraph">
+<p>Long story short: the instruction order in your Dockerfile matters! Every line is a "layer" that Docker creates as basis for the next line, until you reach the end of the Dockerfile and the final image is done.</p>
+</div>
+<div class="paragraph">
+<p>For my project, I use the official Jetty image from the Dockerhub onto which I then put my WAR, and produce a new image that I then upload to our private Artifactory.</p>
+</div>
+<div class="paragraph">
+<p>This is what my Dockerfile <strong>would</strong> be:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>FROM jetty:9.3.12-jre8
+COPY mywarfile.war /opt/jetty/webapps/
+ENTRYPOINT ["java", "-jar", "/opt/jetty/start.jar"]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You will see now how to produce the Docker image without needing any Dockerfile at all.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration">Configuration</h3>
+<div class="paragraph">
+<p>Let&#8217;s see how to configure the plugin in the project&#8217;s <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;plugin&gt;
+  &lt;groupId&gt;com.spotify&lt;/groupId&gt;
+  &lt;artifactId&gt;docker-maven-plugin&lt;/artifactId&gt;
+  &lt;version&gt;0.4.13&lt;/version&gt;
+  &lt;configuration&gt;
+    &lt;imageTags&gt;
+      &lt;imageTag&gt;${project.version}-${myimage.build}&lt;/imageTag&gt;
+    &lt;/imageTags&gt;
+    &lt;imageName&gt;artifactory.mycompany.net/applications/myapp&lt;/imageName&gt;
+    &lt;baseImage&gt;jetty:9.3.12-jre8&lt;/baseImage&gt;
+    &lt;entryPoint&gt;["java", "-jar", "/opt/jetty/start.jar"]&lt;/entryPoint&gt;
+    &lt;workdir&gt;/opt/jetty&lt;/workdir&gt;
+    &lt;exposes&gt;8080&lt;/exposes&gt;
+    &lt;resources&gt;
+      &lt;resource&gt;
+        &lt;targetPath&gt;/opt/jetty/webapps/&lt;/targetPath&gt;
+        &lt;directory&gt;${project.build.directory}&lt;/directory&gt;
+        &lt;include&gt;${project.build.finalName}.war&lt;/include&gt;
+      &lt;/resource&gt;
+    &lt;/resources&gt;
+    &lt;serverId&gt;server_entry&lt;/serverId&gt;
+    &lt;registryUrl&gt;https://artifactory.mycompany.net&lt;/registryUrl&gt;
+  &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see the parameters resemble pretty much the intended Dockerfile.</p>
+</div>
+<div class="paragraph">
+<p>Notice that the <strong>server_entry</strong> is the label of an entry that you have to insert into your local <code>~/.m2/settings.xml</code> as such:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;server&gt;
+  &lt;id&gt;server_entry&lt;/id&gt;
+  &lt;username&gt;insert_login_name_here&lt;/username&gt;
+  &lt;password&gt;insert_password_here&lt;/password&gt;
+  &lt;configuration&gt;
+    &lt;email&gt;insert_your_email_here&lt;/email&gt;
+  &lt;/configuration&gt;
+&lt;/server&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Strangely enough the email field is <strong>mandatory</strong> for the current version of the spotify Docker-maven-plugin to work correctly, so watch out!</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_usage">Usage</h3>
+<div class="paragraph">
+<p>You can see that what I put in the pom.xml is parametrized by some automatic Maven variables (they look like <code>${something}</code>).
+There is a residual parameter which is <code>${myimage.build}</code> which in my case does not come from Maven internals, but from the command line: you can run the docker image generation like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>mvn docker:build -Dmyimage.build=12345</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and this will result in a Docker image created locally with tag</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>artifactory.mycompany.net/applications/myapp:0.0.1-SNAPSHOT-12345</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>(You can check this out with <code>docker ps -a command</code>). The <code>0.0.1-SNAPSHOT</code> part here simply comes from the version of your project (on top of your <code>pom.xml</code> file), so it can be totally different in your case, of course.</p>
+</div>
+<div class="paragraph">
+<p>To push this image to artifactory, we simply need to add a push command to the command line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>mvn docker:build -Dmyimage.build=12345 -DpushImage</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That&#8217;s it.</p>
+</div>
+<div class="paragraph">
+<p>If you use Jenkins CI like in my case, it is easy to inject the ${myimage.build} value from the Jenkins built-in variable BUILD_NUMBER, so every successful job run will automatically push a different image version on Artifactory. Or you could just forget about it and remove the versioning entirely, and only use the "latest" tag (this is automatically managed by the Docker-maven-plugin again): your choice :)</p>
+</div>
+<div class="paragraph">
+<p>Have fun!</p>
+</div>
+</div>]]></description><link>https://carlomorelli.github.io/2016/10/19/Generating-Docker-artifacts-in-your-Java-project.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2016/10/19/Generating-Docker-artifacts-in-your-Java-project.html</guid><category><![CDATA[Java]]></category><category><![CDATA[ Docker]]></category><category><![CDATA[ Maven]]></category><category><![CDATA[ Spotify]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Wed, 19 Oct 2016 00:00:00 GMT</pubDate></item><item><title><![CDATA[Hello]]></title><description><![CDATA[<div class="paragraph">
 <p>So finally I get my developer&#8217;s blog.</p>
 </div>
 <div class="paragraph">
