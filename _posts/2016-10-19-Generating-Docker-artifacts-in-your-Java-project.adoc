@@ -1,0 +1,60 @@
+= Generating Docker artifacts in your Java project
+
+:hp-tags: Java, Docker, Maven
+
+I have been working for 6 months in a new project in my company. It is quite exciting, we do a lot of cutting-edge technology and of course we use massively Jenkins for continous integration.
+
+One of the problems that we started facing at one point is *what* to deliver. We were used to publish our WAR artifact to Artifactory, where it layed there to gain dust. Then our integration-test framework would run immediately after the build (triggered by mvn integration-test), and instead of retrieving the artifact, would use a new build run to generate the WAR in the target/ dir.
+
+The test framework targets Amazon Web Services and from day1 we decided to have everything dockerized. So our app (which runs in a Jetty base image) together with some services (dockerized Apache Kafka and Zookeeper, dockerized Postgres service) build, retrieve a We have a lot of tools at our avaiablity (Artifactory in primis) but we are not able to make them work efficently.
+
+So I took myself the task to improve our workflow, thanks also to our DevOps specialist who explained me a lot of nuts'n'bolts of Docker.
+
+At one 
+
+
+[source, xml]
+-------------------
+<plugin>
+  <groupId>com.spotify</groupId>
+  <artifactId>docker-maven-plugin</artifactId>
+  <version>0.4.13</version>
+  <configuration>
+    <imageTags>
+      <imageTag>${project.version}-${myimage.build}</imageTag>
+    </imageTags>
+    <imageName>artifactory.mycompany.net/applications/myapp</imageName>
+    <baseImage>jetty:9.3.12-jre8</baseImage>
+    <entryPoint>["java", "-jar", "/opt/jetty/start.jar"]</entryPoint>
+    <workdir>/opt/jetty</workdir>
+    <exposes>8080</exposes>
+    <resources>
+      <resource>
+        <targetPath>/opt/jetty/webapps/</targetPath>
+        <directory>${project.build.directory}</directory>
+        <include>${project.build.finalName}.war</include>
+      </resource>
+    </resources>
+    <serverId>server_entry</serverId>
+    <registryUrl>https://artifactory.mycompany.net</registryUrl>
+  </configuration>
+</plugin>
+-------------------
+
+Notice that the *server_entry* is the label of an entry that you have to insert into ~/.m2/settings.xml as such:
+
+[source, xml]
+-------------------
+<server>
+  <id>server_entry</id>
+  <username>insert_login_name_here</username>
+  <password>insert_password_here</password>
+  <configuration>
+    <email>insert_your_email_here</email>
+  </configuration>
+</server>
+-------------------
+
+Strangely enough the email field is *mandatory* for the current version of the spotify Docker-maven-plugin to work correctly, so watch out!
+
+
