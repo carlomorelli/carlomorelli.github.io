@@ -10,7 +10,9 @@ The test framework targets Amazon Web Services and from day1 we decided to have 
 
 So I took myself the task to improve our workflow, thanks also to our DevOps specialist who explained me a lot of nuts'n'bolts of Docker.
 
-At one 
+At one point it was clear that the best artifact to work with is not a WAR file, but a Docker image itself. I found out the wonderful Docker-maven-plugin by Spotify (check it out [on their github repo](https://github.com/spotify/docker-maven-plugin) ) to really suit my need. With it I can create and publish the Docker image of my app directly on Artifactory with a single Maven goal.
+
+Let's see how to configure the plugin in the project's pom.xml: 
 
 
 [source, xml]
@@ -41,7 +43,7 @@ At one
 </plugin>
 -------------------
 
-Notice that the *server_entry* is the label of an entry that you have to insert into ~/.m2/settings.xml as such:
+Notice that the *server_entry* is the label of an entry that you have to insert into your local ~/.m2/settings.xml as such:
 
 [source, xml]
 -------------------
@@ -60,14 +62,26 @@ Strangely enough the email field is *mandatory* for the current version of the s
 You can see that what I put in the pom.xml is parametrized by some automatic Maven variables (they look like ${something}).
 There is a residual parameter which is ${myimage.build} which in my case does not come from Maven internals, but from the command line: you can run the docker image generation like this:
 
+-------------------
 mvn docker:build -Dmyimage.build=12345
+-------------------
 
 and this will result in a Docker image created locally with tag
 
+-------------------
 artifactory.mycompany.net/applications/myapp:0.0.1-SNAPSHOT-12345
+-------------------
 
 (You can check this out with docker ps -a command). The "0.0.1-SNAPSHOT" part here simply comes from the <version> block in your pom.xml file, so it can be totally different in your case, of course.
 
 To push this image to artifactory, we simply need to add a push command to the command line:
 
+-------------------
 mvn docker:build -Dmyimage.build=12345 -DpushImage
+-------------------
+
+That's it. 
+
+If you use Jenkins CI like in my case, it is easy to inject the ${myimage.build} value from the Jenkins built-in variable BUILD_NUMBER, so every successful job run will automatically push a different image version on Artifactory. Or you could just forget about it and remove the versioning entirely, and only use the "latest" tag (this is automatically managed by the Docker-maven-plugin again): your choice :)
+
+Have fun!
