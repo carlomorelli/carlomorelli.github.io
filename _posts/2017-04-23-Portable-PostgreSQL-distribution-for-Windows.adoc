@@ -131,7 +131,53 @@ public class DataSourceFactory {
 === Finally, the Data access object
 What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
 In the future, I want this object Dao to be *injected*, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
+As mentioned, I'm using Sql2o library which is a nice wrapper of SQL statements in object oriented form (it is NOT an ORM like Hibernate, it is just a SQL formatter).
+So the Sql2o main class accepts DataSource injection instead of direct DB connection so we end up with a Dao class like this:
+```
+public class Dao {
+    
+    private Sql2o dao;
 
+    public Dao(DataSource ds) {
+        LOG.info("Connecting to database [ds='{}']...", ds);
+        dao = new Sql2o(ds);
+    }
 
+    public List<Person> fetchAll() {
+        String sql = "SELECT * FROM people";
+        try(Connection conn = dao.open()) {
+            return conn.createQuery(sql).executeAndFetch(Person.class);
+        }
+    }
 
+    public void insert(Person person) {
+        String sql = "INSERT INTO person(index,name,surname,address,age) VALUES (:index,:name,:surname,:address,:age)";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).bind(person).executeUpdate();
+        }
+    }
+    
+    public void flushTable() {
+        String sql = "TRUNCATE TABLE person";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).executeUpdate();
+        }
+    }
+    
+    public void prepareDb() {
+         // submit the schema and create table if not availabe
+         ...
+    }
 
+    public static void main(String...args) throws SQLException {
+        Dao dao = new Dao(DataSourceFactory.getPostgresHikariCPDataSource());
+        dao.prepareDb();
+        
+        IntStream.range(0, 100).forEach(
+            x -> dao.insertItem(new Item(x+1, "prova" +x))
+        );
+        List<Item> list = dao.fetchAllItems();
+        list.forEach(item -> LOG.info("Found item with index {}", item.getIndex()));
+    }
+```
+Hope you liked this little DB walkthrough. 
