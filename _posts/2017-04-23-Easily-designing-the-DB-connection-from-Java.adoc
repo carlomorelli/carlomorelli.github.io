@@ -1,5 +1,7 @@
 = Easily designing the DB connection from Java
 
+:hp-tags: Java, Maven, Postgres, HikariCP, H2, Sql2o
+
 This blog post is the second part of a series. In the previous, I showed how to install a portable version of Postgres on Windows and which reason led me to chose Postgres. 
 
 All right, so now it's the time to spice up with some code examples.
