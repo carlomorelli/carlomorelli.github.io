@@ -1,5 +1,7 @@
 = Portable PostgreSQL distribution for Windows
 
+:hp-tags: Postgres, Windows
+
 For a personal project I needed finally to get a grip and move from a base database to something more Enterprise-level.
 
 Usually, DBs are not my thing, but if you need persistence in any project, it is almost an obligatory route. I like simple things and I would usually go for the easiest and most straightforward option. Because my pet project was Java-based, I thus was using the well-known http://www.h2database.com/html/main.html[H2 database] (which is implemented in Java itself).
