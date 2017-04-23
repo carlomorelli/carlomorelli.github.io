@@ -1,0 +1,33 @@
+= Portable PostgreSQL distribution for Windows
+
+For a personal project I needed finally to get a grip and move from a base database to something more Enterprise-level.
+
+Usually, DBs are not my thing, but if you need persistence in any project, it is almost an obligatory route. I like simple things and I would usually go for the easiest and most straightforward option. Because my pet project was Java-based, I thus was using the well-known http://www.h2database.com/html/main.html[H2 database] (which is implemented in Java itself).
+
+However the project was getting large and I needed advanced features like Connection Pooling and networked DB server -- if you want to play the cloud route, you definitely have to start thinking about these things sooner or later.
+
+== Choosing the DB server
+In choosing the DB server, i had some constraints. First of all, my home machine is not that great -- it's a desktop-replacement laptop from 2012 with Windows 7, so no heavy loads thank you :-).
+For me the choice could be reduced to the followings:
+
+* MySQL / mariaDB
+** Pro: fast, stable, open-source
+** Con: large installation, complex on Windows
+* PostgreSQL (aka Postgres, aka Pg)
+** Pro: the most deployed, documented, and developed; open-source; the installation package is < 100 Mb for version 9.5
+** Con: Not very fast for big transactions
+* Microsoft SQLServer 2017 Developer
+** Pro: free, the most enterprise-grade probably
+** Con: super difficult to configure, non open, and with a laaaaarge installation
+* A NoSQL database
+** Pro: really fast developing field in the recent years
+** Con: usually it is a fragmented field, with many products specialized on different aspects (eg. ElasticSearch on clustered responsiveness, MongoDB on data reliability, ArangoDB on other features); also, generally they are not lightweight
+
+In the end I decided to go with the Postgres route: it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless.
+
+== 'Portable' Postgres installation
+On Windows I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.
+I put normal software in a `C:\opt` folder, and if it is developement-related software, i put it into `C:\workspace\opt`. Yes yes I know, bad habits from Linux.... moving on :P
+
+On this Win7 machine I like to keep things tidy and when I need software, I usually use the 'portable' binaries, that 
+
