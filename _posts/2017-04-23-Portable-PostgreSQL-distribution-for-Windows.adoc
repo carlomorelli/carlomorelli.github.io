@@ -94,6 +94,38 @@ This should appear in the `pom.xml`:
 </dependencies>
 ```
 
-To be noticed that you only need Postgresql and HikariCP in realty, but the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2O for submitting queries (more on this in the examples)
+To be noticed that you only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. However the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2O for submitting queries (more on this in the examples)
 
-=== 
+=== Using Hikari
+Using Hikari is very straightforward. Long story short, instead of instantiating a connector to Postgres JDBC driver directly, we have to instantiate the `javax.sql.DataSource` implementation of HikariCP: A configuration file in `src/main/resources` will worry telling Hikari how to connect to Pg:
+```
+System.setProperty("hikaricp.configurationFile", "src/main/resources/conf.properties");
+DataSource ds = new HikariDataSource();
+```
+The config file content should be something like this:
+```
+dataSourceClassName=org.postgresql.ds.PGSimpleDataSource
+dataSource.user=postgres
+dataSource.password=postgres
+dataSource.databaseName=postgres
+dataSource.portNumber=5439
+dataSource.serverName=localhost
+```
+Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want (note: imports omitted):
+```
+public class DataSourceFactory {
+    public static DataSource getPostgresHikariCPDataSource() throws SQLException {
+        System.setProperty("hikaricp.configurationFile", "src/main/resources/configuration.properties");
+        return new HikariDataSource();
+    }
+    public static DataSource getH2DataSource() {
+        JdbcDataSource ds = new JdbcDataSource();
+        ds.setURL("jdbc:h2:./test");
+        ds.setUser("sa");
+        ds.setPassword("sa");
+        return ds;
+    }
+}
+```
+
+
