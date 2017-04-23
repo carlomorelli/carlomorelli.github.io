@@ -25,9 +25,37 @@ For me the choice could be reduced to the followings:
 
 In the end I decided to go with the Postgres route: it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless.
 
-== 'Portable' Postgres installation
+== Install and configure 'portable' Postgres
 On Windows I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.
-I put normal software in a `C:\opt` folder, and if it is developement-related software, i put it into `C:\workspace\opt`. Yes yes I know, bad habits from Linux.... moving on :P
 
-On this Win7 machine I like to keep things tidy and when I need software, I usually use the 'portable' binaries, that 
+I put normal software blobs in a `C:\opt` folder, and if it is developement-related software, I use the  `C:\workspace\opt` folder (as `C:\workspace` is the root of all my code). Yes yes I know, bad habits from Linux... moving on :P
+
+It happens that Pg offers percisely this: https://www.enterprisedb.com/download-postgresql-binaries. So time to download the Win-x86-64 blob for version 9.5.6 and unpack it.
+
+The binary blob provides not only the Pg commands, but also the handy pgAdminIII frontend. In the root folder of the unpacked software (in my case, `C:\workspace\opt\postgres-9.5.6\`), then, create the batch file `launch_pg.bat` with this content:
+
+```
+REM contents
+@echo off
+set PATH="%~dp0\bin";%PATH%
+set PGDATA=%~dp0\data
+set PGDATABASE=postgres
+set PGUSER=postgres
+set PGPORT=5439
+set PGLOCALEDIR=%~dp0\share\locale
+"%~dp0\bin\initdb" -U postgres -A trust
+"%~dp0\bin\pg_ctl" -D "%~dp0/data" -l logfile start
+echo "#### Ready. Press space to shutdown..."
+pause > null
+"%~dp0\bin\pg_ctl" -D "%~dp0/data" stop
+```
+
+If you are wondering, `%~dp0` variable return the current directory -- that is, the directory where the .bat file is being executed.
+
+*WARNING*: The first run of this script will initialize the database in the %PGDATA% directory with the `initdb` line. _For the following launches, remember to comment that line_.
+
+At this point, I am basically done: I'll just create Desktop launchers for both this .bat file and the pgAdmin.exe file that you can find in bin\. As you can understand my need is to launch (and terminate) Pg on-demand.
+However, other people may want to launch Pg as system service or scheduled task (at startup). If that's the case, I suggest to create a startup task in Windows' Task Scheduler in Control Panel.
+
+
 
