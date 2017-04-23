@@ -1,0 +1,132 @@
+= Easily designing the DB connection from Java
+
+This blog post is the second part of a series. In the previous, I showed how to install a portable version of Postgres on Windows and which reason led me to chose Postgres. 
+
+All right, so now it's the time to spice up with some code examples.
+
+First of all, as mentioned at the beginning, the reason I needed a full-featured Db was to have a networked server, and a connection pool under use. By the way, check this out: http://stackoverflow.com/questions/4041114/what-is-database-pooling[what is connection pooling and why I need it?]
+
+In Java traditionally the JDBC method of connecting to databases is straghtforward, and adding a connection pool is painless. Most of technologies implement standard interfaces from `javax.*` after all.
+
+There are several CP libs out there (the most used seem to be C3PO and Apache Commons DBCP), but I chose to be adventurous and use https://github.com/brettwooldridge/HikariCP[HikariCP]: after all they claim to be more robust and optimized than C3PO so I have the chance to learn to use this lib.
+
+== Adding libs in the Maven project
+This should appear in the `pom.xml`:
+
+```
+<dependencies>
+    <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>2.6.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>42.0.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>1.4.192</version>
+    </dependency>
+    <dependency>
+        <groupId>org.sql2o</groupId>
+        <artifactId>sql2o</artifactId>
+        <version>1.5.4</version>
+    </dependency>
+</dependencies>
+```
+
+You actually only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. However the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2o for submitting queries -- more on this in the examples.
+
+== Using Hikari
+Using Hikari is very straightforward. Instead of instantiating a connector to Postgres JDBC driver directly, we have to instantiate the `javax.sql.DataSource` implementation of HikariCP: A configuration file in `src/main/resources` will worry telling Hikari how to connect to Pg and which Driver class to use:
+```
+System.setProperty("hikaricp.configurationFile", "src/main/resources/conf.properties");
+DataSource ds = new HikariDataSource();
+```
+The config file content should be something like this:
+```
+dataSourceClassName=org.postgresql.ds.PGSimpleDataSource
+dataSource.user=postgres
+dataSource.password=postgres
+dataSource.databaseName=postgres
+dataSource.portNumber=5439
+dataSource.serverName=localhost
+```
+Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some *Dependancy Injection* lib -- but this is a topic for another time.
+```
+// imports omitted
+public class DataSourceFactory {
+    public static DataSource getPostgresHikariCPDataSource() throws SQLException {
+        System.setProperty("hikaricp.configurationFile", "src/main/resources/configuration.properties");
+        return new HikariDataSource();
+    }
+    public static DataSource getH2DataSource() {
+        JdbcDataSource ds = new JdbcDataSource();
+        ds.setURL("jdbc:h2:./test");
+        ds.setUser("sa");
+        ds.setPassword("sa");
+        return ds;
+    }
+}
+```
+== Finally, the Data access object
+What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
+In the future, I want this object Dao to be *injected*, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
+As mentioned, I'm using Sql2o library which is a nice wrapper of SQL statements in object oriented form (it is NOT an ORM like Hibernate, it is just a SQL formatter).
+So the Sql2o main class accepts DataSource injection instead of direct DB connection so we end up with a Dao class like this:
+```
+public class Dao {
+    
+    private Sql2o dao;
+
+    public Dao(DataSource ds) {
+        LOG.info("Connecting to database [ds='{}']...", ds);
+        dao = new Sql2o(ds);
+    }
+
+    public List<Person> fetchAll() {
+        String sql = "SELECT * FROM people";
+        try(Connection conn = dao.open()) {
+            return conn.createQuery(sql).executeAndFetch(Person.class);
+        }
+    }
+
+    public void insert(Person person) {
+        String sql = "INSERT INTO person(index,name,surname,address,age) VALUES (:index,:name,:surname,:address,:age)";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).bind(person).executeUpdate();
+        }
+    }
+    
+    public void flushTable() {
+        String sql = "TRUNCATE TABLE person";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).executeUpdate();
+        }
+    }
+    
+    public void prepareDb() {
+         // submit the schema and create table if not availabe
+         ...
+    }
+}
+```
+Aaaaand, to wrap this tutorial up, here is how you would use the Dao in the caller code:
+```
+   ...
+   public static void main(String...args) throws SQLException {
+        Dao dao = new Dao(DataSourceFactory.getPostgresHikariCPDataSource());
+        dao.prepareDb();
+        
+        IntStream.range(0, 100).forEach(
+            x -> dao.insertItem(new Item(x+1, "test" +x))
+        );
+        List<Item> list = dao.fetchAllItems();
+        list.forEach(item -> LOG.info("Found item with index {}", item.getIndex()));
+    }
+    ...
+```
+Clearly it is not worth the pain of managing a DB server if you only manage a single kind of entity (Person.class). The focus of this tutorial is not really the complexity of the data to manage, but how to build the persistence layer of your application is a structured manner and to be ready to switch database under the hood -- and also some advanced information about connection pooling :) Hope you liked it!
