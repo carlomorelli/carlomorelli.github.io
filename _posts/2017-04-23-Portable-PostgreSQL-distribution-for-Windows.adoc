@@ -57,5 +57,43 @@ If you are wondering, `%~dp0` variable return the current directory -- that is, 
 At this point, I am basically done: I'll just create Desktop launchers for both this .bat file and the pgAdmin.exe file that you can find in bin\. As you can understand my need is to launch (and terminate) Pg on-demand.
 However, other people may want to launch Pg as system service or scheduled task (at startup). If that's the case, I suggest to create a startup task in Windows' Task Scheduler in Control Panel.
 
+== Show me some code
+All right, let's spice up this blog post with some code examples.
 
+First of all, as mentioned at the beginning, I needed a full-featured Db was to have a networked server, and a connection pool under use. By the way, check this out: http://stackoverflow.com/questions/4041114/what-is-database-pooling[what is connection pooling and why I need it?]
 
+In Java traditionally the JDBC method of connecting to databases is straghtforward, and adding a connection pool is painless. Most of technologies implement standard interfaces from `javax.*` after all.
+
+There are several CP libs out there (the most used seem to be C3PO and Apache Commons DBCP), but I chose to be adventurous and use https://github.com/brettwooldridge/HikariCP[HikariCP]: after all they claim to be more robust and optimized than C3PO so I have the chance to learn to use this lib.
+
+=== Adding libs in the Maven project
+This should appear in the `pom.xml`:
+
+```
+<dependencies>
+    <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>2.6.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>42.0.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>1.4.192</version>
+    </dependency>
+    <dependency>
+        <groupId>org.sql2o</groupId>
+        <artifactId>sql2o</artifactId>
+        <version>1.5.4</version>
+    </dependency>
+</dependencies>
+```
+
+To be noticed that you only need Postgresql and HikariCP in realty, but the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2O for submitting queries (more on this in the examples)
+
+=== 
