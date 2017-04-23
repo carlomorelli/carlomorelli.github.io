@@ -2,15 +2,15 @@
 
 :hp-tags: Postgres, Windows
 
-For a personal project I needed finally to get a grip and move from a base database to something more Enterprise-level.
+For a personal project I needed finally to get a grip and move from a simple database to something more Enterprise-level.
 
-Usually, DBs are not my thing, but if you need persistence in any project, it is almost an obligatory route. I like simple things and I would usually go for the easiest and most straightforward option. Because my pet project was Java-based, I thus was using the well-known http://www.h2database.com/html/main.html[H2 database] (which is implemented in Java itself).
+Usually, DBs are not my thing, but if you need persistence in any project, it is almost always a mandatory route. I like simple things and I would usually go for the easiest and most straightforward option. Because my pet project was Java-based, I thus was using the well-known http://www.h2database.com/html/main.html[H2 database] (which is implemented in Java itself).
 
-However the project was getting large and I needed advanced features like Connection Pooling and networked DB server -- if you want to play the cloud route, you definitely have to start thinking about these things sooner or later.
+However the project was getting large and I needed advanced features like Connection Pooling and networked DB server -- if you want to play in the Cloud, you definitely have to start thinking about these things sooner or later.
 
 == Choosing the DB server
 In choosing the DB server, i had some constraints. First of all, my home machine is not that great -- it's a desktop-replacement laptop from 2012 with Windows 7, so no heavy loads thank you :-).
-For me the choice could be reduced to the followings:
+The choice was limited to the followings:
 
 * MySQL / mariaDB
 ** Pro: fast, stable, open-source
@@ -23,16 +23,16 @@ For me the choice could be reduced to the followings:
 ** Con: super difficult to configure, non open, and with a laaaaarge installation
 * A NoSQL database
 ** Pro: really fast developing field in the recent years
-** Con: usually it is a fragmented field, with many products specialized on different aspects (eg. ElasticSearch on clustered responsiveness, MongoDB on data reliability, ArangoDB on other features); also, generally they are not lightweight
+** Con: it is a fragmented field, with many products specialized on different aspects (eg. ElasticSearch on clustered responsiveness, MongoDB on data reliability, ArangoDB on other features); also, generally the noSQL dbs are not lightweight
 
-In the end I decided to go with the Postgres route: it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless.
+In the end I decided to go with Postgres: it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless.
 
 == Install and configure 'portable' Postgres
-On Windows I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.
+On my Windows pc I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.
 
 I put normal software blobs in a `C:\opt` folder, and if it is developement-related software, I use the  `C:\workspace\opt` folder (as `C:\workspace` is the root of all my code). Yes yes I know, bad habits from Linux... moving on :P
 
-It happens that Pg offers percisely this: https://www.enterprisedb.com/download-postgresql-binaries. So time to download the Win-x86-64 blob for version 9.5.6 and unpack it.
+It happens that Pg offers precisely this: https://www.enterprisedb.com/download-postgresql-binaries. So time to download the _Win-x86-64_ blob for version 9.5.6 and unpack it.
 
 The binary blob provides not only the Pg commands, but also the handy pgAdminIII frontend. In the root folder of the unpacked software (in my case, `C:\workspace\opt\postgres-9.5.6\`), then, create the batch file `launch_pg.bat` with this content:
 
@@ -57,129 +57,7 @@ If you are wondering, `%~dp0` variable return the current directory -- that is, 
 *WARNING*: The first run of this script will initialize the database in the %PGDATA% directory with the `initdb` line. _For the following launches, remember to comment that line_.
 
 At this point, I am basically done: I'll just create Desktop launchers for both this .bat file and the pgAdmin.exe file that you can find in bin\. As you can understand my need is to launch (and terminate) Pg on-demand.
+
 However, other people may want to launch Pg as system service or scheduled task (at startup). If that's the case, I suggest to create a startup task in Windows' Task Scheduler in Control Panel.
 
-== Show me some code
-All right, let's spice up this blog post with some code examples.
-
-First of all, as mentioned at the beginning, I needed a full-featured Db was to have a networked server, and a connection pool under use. By the way, check this out: http://stackoverflow.com/questions/4041114/what-is-database-pooling[what is connection pooling and why I need it?]
-
-In Java traditionally the JDBC method of connecting to databases is straghtforward, and adding a connection pool is painless. Most of technologies implement standard interfaces from `javax.*` after all.
-
-There are several CP libs out there (the most used seem to be C3PO and Apache Commons DBCP), but I chose to be adventurous and use https://github.com/brettwooldridge/HikariCP[HikariCP]: after all they claim to be more robust and optimized than C3PO so I have the chance to learn to use this lib.
-
-=== Adding libs in the Maven project
-This should appear in the `pom.xml`:
-
-```
-<dependencies>
-    <dependency>
-        <groupId>com.zaxxer</groupId>
-        <artifactId>HikariCP</artifactId>
-        <version>2.6.1</version>
-    </dependency>
-    <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>42.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>com.h2database</groupId>
-        <artifactId>h2</artifactId>
-        <version>1.4.192</version>
-    </dependency>
-    <dependency>
-        <groupId>org.sql2o</groupId>
-        <artifactId>sql2o</artifactId>
-        <version>1.5.4</version>
-    </dependency>
-</dependencies>
-```
-
-To be noticed that you only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. However the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2O for submitting queries (more on this in the examples)
-
-=== Using Hikari
-Using Hikari is very straightforward. Long story short, instead of instantiating a connector to Postgres JDBC driver directly, we have to instantiate the `javax.sql.DataSource` implementation of HikariCP: A configuration file in `src/main/resources` will worry telling Hikari how to connect to Pg:
-```
-System.setProperty("hikaricp.configurationFile", "src/main/resources/conf.properties");
-DataSource ds = new HikariDataSource();
-```
-The config file content should be something like this:
-```
-dataSourceClassName=org.postgresql.ds.PGSimpleDataSource
-dataSource.user=postgres
-dataSource.password=postgres
-dataSource.databaseName=postgres
-dataSource.portNumber=5439
-dataSource.serverName=localhost
-```
-Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some Dependancy Injection lib -- but this is a topic for another time.
-```
-// imports omitted
-public class DataSourceFactory {
-    public static DataSource getPostgresHikariCPDataSource() throws SQLException {
-        System.setProperty("hikaricp.configurationFile", "src/main/resources/configuration.properties");
-        return new HikariDataSource();
-    }
-    public static DataSource getH2DataSource() {
-        JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:./test");
-        ds.setUser("sa");
-        ds.setPassword("sa");
-        return ds;
-    }
-}
-```
-=== Finally, the Data access object
-What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
-In the future, I want this object Dao to be *injected*, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
-As mentioned, I'm using Sql2o library which is a nice wrapper of SQL statements in object oriented form (it is NOT an ORM like Hibernate, it is just a SQL formatter).
-So the Sql2o main class accepts DataSource injection instead of direct DB connection so we end up with a Dao class like this:
-```
-public class Dao {
-    
-    private Sql2o dao;
-
-    public Dao(DataSource ds) {
-        LOG.info("Connecting to database [ds='{}']...", ds);
-        dao = new Sql2o(ds);
-    }
-
-    public List<Person> fetchAll() {
-        String sql = "SELECT * FROM people";
-        try(Connection conn = dao.open()) {
-            return conn.createQuery(sql).executeAndFetch(Person.class);
-        }
-    }
-
-    public void insert(Person person) {
-        String sql = "INSERT INTO person(index,name,surname,address,age) VALUES (:index,:name,:surname,:address,:age)";
-        try(Connection conn = dao.open()) {
-            conn.createQuery(sql).bind(person).executeUpdate();
-        }
-    }
-    
-    public void flushTable() {
-        String sql = "TRUNCATE TABLE person";
-        try(Connection conn = dao.open()) {
-            conn.createQuery(sql).executeUpdate();
-        }
-    }
-    
-    public void prepareDb() {
-         // submit the schema and create table if not availabe
-         ...
-    }
-
-    public static void main(String...args) throws SQLException {
-        Dao dao = new Dao(DataSourceFactory.getPostgresHikariCPDataSource());
-        dao.prepareDb();
-        
-        IntStream.range(0, 100).forEach(
-            x -> dao.insertItem(new Item(x+1, "prova" +x))
-        );
-        List<Item> list = dao.fetchAllItems();
-        list.forEach(item -> LOG.info("Found item with index {}", item.getIndex()));
-    }
-```
-Hope you liked this little DB walkthrough. 
+In a next blog post, I will discuss how I managed to manage Postgres (via a connection-pool) using the canonical Java JDBC way. Stay tuned!
