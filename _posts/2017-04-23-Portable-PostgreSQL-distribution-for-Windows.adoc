@@ -111,8 +111,9 @@ dataSource.databaseName=postgres
 dataSource.portNumber=5439
 dataSource.serverName=localhost
 ```
-Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want (note: imports omitted):
+Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some Dependancy Injection lib -- but this is a topic for another time.
 ```
+// imports omitted
 public class DataSourceFactory {
     public static DataSource getPostgresHikariCPDataSource() throws SQLException {
         System.setProperty("hikaricp.configurationFile", "src/main/resources/configuration.properties");
@@ -127,5 +128,10 @@ public class DataSourceFactory {
     }
 }
 ```
+=== Finally, the Data access object
+What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
+In the future, I want this object Dao to be *injected*, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
+
+
 
 
