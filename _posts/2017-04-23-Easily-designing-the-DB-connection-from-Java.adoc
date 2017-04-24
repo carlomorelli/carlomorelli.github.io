@@ -2,7 +2,7 @@
 
 :hp-tags: Java, Maven, Postgres, HikariCP, H2, Sql2o
 
-This blog post is the second part of a series. In the previous, I showed how to install a portable version of Postgres on Windows and which reason led me to chose Postgres. 
+This blog post is the second part of a series. In the previous, I showed how to install a portable version of Postgres on Windows and which reason led me to chose Postgres (https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html[link]). 
 
 All right, so now it's the time to spice up with some code examples.
 
