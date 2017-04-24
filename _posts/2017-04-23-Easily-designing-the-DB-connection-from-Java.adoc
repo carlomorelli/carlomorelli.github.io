@@ -12,7 +12,7 @@ In Java traditionally the JDBC method of connecting to databases is straghtforwa
 
 There are several CP libs out there (the most used seem to be C3PO and Apache Commons DBCP), but I chose to be adventurous and use https://github.com/brettwooldridge/HikariCP[HikariCP]: after all they claim to be more robust and optimized than C3PO so I have the chance to learn to use this lib.
 
-== Adding libs in the Maven project
+== Adding the dependencies
 This should appear in the `pom.xml`:
 
 ```
@@ -40,10 +40,10 @@ This should appear in the `pom.xml`:
 </dependencies>
 ```
 
-You actually only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. However the code that I will show you now is also managing the old H2 instance I had before this change (which I'm retaining for testing), and uses the library SQL2o for submitting queries -- more on this in the examples.
+You actually only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. The reason why the other dependencies are shown is that the code that I will show you now is also managing the old H2 db instance I had before this change (which I'm retaining for testing), and uses the library SQL2o for submitting queries -- more on this in the examples.
 
 == Using Hikari
-Using Hikari is very straightforward. Instead of instantiating a connector to Postgres JDBC driver directly, we have to instantiate the `javax.sql.DataSource` implementation of HikariCP: A configuration file in `src/main/resources` will worry telling Hikari how to connect to Pg and which Driver class to use:
+Using Hikari is very straightforward. Instead of instantiating a connector to the Postgres JDBC driver directly, we have to instantiate the `javax.sql.DataSource` implementation of HikariCP: A configuration file in `src/main/resources` will worry telling Hikari how to connect to Pg and which Driver class to use:
 ```
 System.setProperty("hikaricp.configurationFile", "src/main/resources/conf.properties");
 DataSource ds = new HikariDataSource();
@@ -57,7 +57,7 @@ dataSource.databaseName=postgres
 dataSource.portNumber=5439
 dataSource.serverName=localhost
 ```
-Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some *Dependancy Injection* lib -- but this is a topic for another time.
+Because I'm preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some *Dependency Injection* lib -- but this is a topic for another time.
 ```
 // imports omitted
 public class DataSourceFactory {
@@ -74,7 +74,7 @@ public class DataSourceFactory {
     }
 }
 ```
-== Finally, the Data access object
+== The Data access object
 What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
 In the future, I want this object Dao to be *injected*, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
 As mentioned, I'm using Sql2o library which is a nice wrapper of SQL statements in object oriented form (it is NOT an ORM like Hibernate, it is just a SQL formatter).
@@ -122,13 +122,10 @@ Aaaaand, to wrap this tutorial up, here is how you would use the Dao in the call
    public static void main(String...args) throws SQLException {
         Dao dao = new Dao(DataSourceFactory.getPostgresHikariCPDataSource());
         dao.prepareDb();
-        
-        IntStream.range(0, 100).forEach(
-            x -> dao.insertItem(new Item(x+1, "test" +x))
-        );
+        IntStream.range(0, 100).forEach( x -> dao.insertItem(new Item(x+1, "test" +x)));
         List<Item> list = dao.fetchAllItems();
         list.forEach(item -> LOG.info("Found item with index {}", item.getIndex()));
     }
     ...
 ```
-Clearly it is not worth the pain of managing a DB server if you only manage a single kind of entity (Person.class). The focus of this tutorial is not really the complexity of the data to manage, but how to build the persistence layer of your application is a structured manner and to be ready to switch database under the hood -- and also some advanced information about connection pooling :) Hope you liked it!
+Clearly it is not worth the pain of managing a DB server if you only manage a single kind of entity (`Person.class`). The focus of this tutorial is not really the complexity of the data to manage, but how to build the persistence layer of your application is a structured manner and to be ready to switch database under the hood -- and also some advanced information about connection pooling :) Hope you liked it!
