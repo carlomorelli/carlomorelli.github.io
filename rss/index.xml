@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Mon, 24 Apr 2017 06:55:14 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Mon, 24 Apr 2017 07:04:46 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>For a personal project in Java I was using the well-known <a href="http://www.h2database.com/html/main.html">H2 database</a> (which is implemented in Java itself).</p>
@@ -127,7 +127,179 @@ In general the choice was limited to the followings:</p>
 <p>In a next blog post, I will discuss how I manage Postgres (via a connection-pool) using the canonical Java JDBC way. Stay tuned!</p>
 </div>
 </div>
-</div>]]></description><link>https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</guid><category><![CDATA[Postgres]]></category><category><![CDATA[ Windows]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sun, 23 Apr 2017 00:00:00 GMT</pubDate></item><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
+</div>]]></description><link>https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</guid><category><![CDATA[Postgres]]></category><category><![CDATA[ Windows]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sun, 23 Apr 2017 00:00:00 GMT</pubDate></item><item><title><![CDATA[Easily designing the DB connection from Java]]></title><description><![CDATA[<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This blog post is the second part of a series. In the previous, I showed how to install a portable version of Postgres on Windows and which reason led me to chose Postgres (<a href="https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html">link</a>).</p>
+</div>
+<div class="paragraph">
+<p>All right, so now it&#8217;s the time to spice up with some code examples.</p>
+</div>
+<div class="paragraph">
+<p>First of all, as mentioned at the beginning, the reason I needed a full-featured Db was to have a networked server, and a connection pool under use. By the way, check this out: <a href="http://stackoverflow.com/questions/4041114/what-is-database-pooling">what is connection pooling and why I need it?</a></p>
+</div>
+<div class="paragraph">
+<p>In Java traditionally the JDBC method of connecting to databases is straghtforward, and adding a connection pool is painless. Most of technologies implement standard interfaces from <code>javax.*</code> after all.</p>
+</div>
+<div class="paragraph">
+<p>There are several CP libs out there (the most used seem to be C3PO and Apache Commons DBCP), but I chose to be adventurous and use <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a>: after all they claim to be more robust and optimized than C3PO so I have the chance to learn to use this lib.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_adding_the_dependencies">Adding the dependencies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This should appear in the <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.zaxxer&lt;/groupId&gt;
+        &lt;artifactId&gt;HikariCP&lt;/artifactId&gt;
+        &lt;version&gt;2.6.1&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+        &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+        &lt;version&gt;42.0.0&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+        &lt;artifactId&gt;h2&lt;/artifactId&gt;
+        &lt;version&gt;1.4.192&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.sql2o&lt;/groupId&gt;
+        &lt;artifactId&gt;sql2o&lt;/artifactId&gt;
+        &lt;version&gt;1.5.4&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You actually only need the Postgresql (which is actually the Postgres JDBC driver for Java) and HikariCP dependencies. The reason why the other dependencies are shown is that the code that I will show you now is also managing the old H2 db instance I had before this change (which I&#8217;m retaining for testing), and uses the library SQL2o for submitting queries&#8201;&#8212;&#8201;more on this in the examples.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_hikari">Using Hikari</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Using Hikari is very straightforward. Instead of instantiating a connector to the Postgres JDBC driver directly, we have to instantiate the <code>javax.sql.DataSource</code> implementation of HikariCP: A configuration file in <code>src/main/resources</code> will worry telling Hikari how to connect to Pg and which Driver class to use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>System.setProperty("hikaricp.configurationFile", "src/main/resources/conf.properties");
+DataSource ds = new HikariDataSource();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The config file content should be something like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>dataSourceClassName=org.postgresql.ds.PGSimpleDataSource
+dataSource.user=postgres
+dataSource.password=postgres
+dataSource.databaseName=postgres
+dataSource.portNumber=5439
+dataSource.serverName=localhost</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because I&#8217;m preserving also H2 in my project for testing, I will create a DataSourceFactory class that can return the DataSource implementation that I want, for example using some <strong>Dependency Injection</strong> lib&#8201;&#8212;&#8201;but this is a topic for another time.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>// imports omitted
+public class DataSourceFactory {
+    public static DataSource getPostgresHikariCPDataSource() throws SQLException {
+        System.setProperty("hikaricp.configurationFile", "src/main/resources/configuration.properties");
+        return new HikariDataSource();
+    }
+    public static DataSource getH2DataSource() {
+        JdbcDataSource ds = new JdbcDataSource();
+        ds.setURL("jdbc:h2:./test");
+        ds.setUser("sa");
+        ds.setPassword("sa");
+        return ds;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_data_access_object">The Data access object</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>What I usually do at this point, is having a a Dao class that masks, or abstracts, the database interactions.
+In the future, I want this object Dao to be <strong>injected</strong>, so it will have a constructor that gets a DataSource implementation, coming from the static Factory that we wrote before.
+As mentioned, I&#8217;m using Sql2o library which is a nice wrapper of SQL statements in object oriented form (it is NOT an ORM like Hibernate, it is just a SQL formatter).
+So the Sql2o main class accepts DataSource injection instead of direct DB connection so we end up with a Dao class like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class Dao {
+
+    private Sql2o dao;
+
+    public Dao(DataSource ds) {
+        LOG.info("Connecting to database [ds='{}']...", ds);
+        dao = new Sql2o(ds);
+    }
+
+    public List&lt;Person&gt; fetchAll() {
+        String sql = "SELECT * FROM people";
+        try(Connection conn = dao.open()) {
+            return conn.createQuery(sql).executeAndFetch(Person.class);
+        }
+    }
+
+    public void insert(Person person) {
+        String sql = "INSERT INTO person(index,name,surname,address,age) VALUES (:index,:name,:surname,:address,:age)";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).bind(person).executeUpdate();
+        }
+    }
+
+    public void flushTable() {
+        String sql = "TRUNCATE TABLE person";
+        try(Connection conn = dao.open()) {
+            conn.createQuery(sql).executeUpdate();
+        }
+    }
+
+    public void prepareDb() {
+         // submit the schema and create table if not availabe
+         ...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Aaaaand, to wrap this tutorial up, here is how you would use the Dao in the caller code:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>   ...
+   public static void main(String...args) throws SQLException {
+        Dao dao = new Dao(DataSourceFactory.getPostgresHikariCPDataSource());
+        dao.prepareDb();
+        IntStream.range(0, 100).forEach( x -&gt; dao.insertItem(new Item(x+1, "test" +x)));
+        List&lt;Item&gt; list = dao.fetchAllItems();
+        list.forEach(item -&gt; LOG.info("Found item with index {}", item.getIndex()));
+    }
+    ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Clearly it is not worth the pain of managing a DB server if you only manage a single kind of entity (<code>Person.class</code>). The focus of this tutorial is not really the complexity of the data to manage, but how to build the persistence layer of your application is a structured manner and to be ready to switch database under the hood&#8201;&#8212;&#8201;and also some advanced information about connection pooling :) Hope you liked it!</p>
+</div>
+</div>
+</div>]]></description><link>https://carlomorelli.github.io/2017/04/23/Easily-designing-the-DB-connection-from-Java.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2017/04/23/Easily-designing-the-DB-connection-from-Java.html</guid><category><![CDATA[Java]]></category><category><![CDATA[ Maven]]></category><category><![CDATA[ Postgres]]></category><category><![CDATA[ HikariCP]]></category><category><![CDATA[ H2]]></category><category><![CDATA[ Sql2o]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sun, 23 Apr 2017 00:00:00 GMT</pubDate></item><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>I have been working for 6 months in a new Java/Maven project in my company. It is quite exciting, we do a lot of cutting-edge technology and of course we use massively Jenkins for continous integration.</p>
