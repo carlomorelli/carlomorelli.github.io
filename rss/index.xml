@@ -1,22 +1,68 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Sun, 23 Apr 2017 18:59:50 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Mon, 24 Apr 2017 06:54:31 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>For a personal project I needed finally to get a grip and move from a simple database to something more Enterprise-level.</p>
+<p>For a personal project in Java I was using the well-known <a href="http://www.h2database.com/html/main.html">H2 database</a> (which is implemented in Java itself).</p>
 </div>
 <div class="paragraph">
-<p>Usually, DBs are not my thing, but if you need persistence in any project, it is almost always a mandatory route. I like simple things and I would usually go for the easiest and most straightforward option. Because my pet project was Java-based, I thus was using the well-known <a href="http://www.h2database.com/html/main.html">H2 database</a> (which is implemented in Java itself).</p>
+<p>H2 is a great, easy-to-use db and personally I always like to keep things simple. However, if you are targeting the Cloud, sooner or later you will need advanced features like  networked DB server, user management and  connection pooling, so finally I decided to get a grip and move from H2 to something more Enterprise-level.</p>
 </div>
 <div class="paragraph">
-<p>However the project was getting large and I needed advanced features like Connection Pooling and networked DB server&#8201;&#8212;&#8201;if you want to play in the Cloud, you definitely have to start thinking about these things sooner or later.</p>
+<p>After some research about the DB platform to adopt, I opted for Postgres. In this post I will show an easy way to deploy an installer-less Postgres on Windows machines&#8201;&#8212;&#8201;something many people on the Internet call 'portable version'.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_choosing_the_db_server">Choosing the DB server</h2>
+<h2 id="_install_and_configure_portable_postgres">Install and configure 'portable' Postgres</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In choosing the DB server, i had some constraints. First of all, my home machine is not that great&#8201;&#8212;&#8201;it&#8217;s a desktop-replacement laptop from 2012 with Windows 7, so no heavy loads thank you :-).
-The choice was limited to the followings:</p>
+<p>On my Windows pc I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.</p>
+</div>
+<div class="paragraph">
+<p>I put normal software blobs in a <code>C:\opt</code> folder, and if it is developement-related software, I use the  <code>C:\workspace\opt</code> folder (as <code>C:\workspace</code> is the root of all my code). Yes yes I know, bad habits from Linux&#8230;&#8203; moving on :P</p>
+</div>
+<div class="paragraph">
+<p>It happens that Postgres offers precisely this: <a href="https://www.enterprisedb.com/download-postgresql-binaries" class="bare">https://www.enterprisedb.com/download-postgresql-binaries</a>. So time to download the <em>Win-x86-64</em> blob for version 9.5.6 and unpack it.</p>
+</div>
+<div class="paragraph">
+<p>The binary blob provides not only the classic Pgsql commands (initdb, dropdb, psql), but also the handy pgAdminIII frontend. In the root folder of the unpacked software (in my case, <code>C:\workspace\opt\postgres-9.5.6\</code>), then, create the batch file <code>launch_pg.bat</code> with this content:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>REM contents
+@echo off
+set PATH="%~dp0\bin";%PATH%
+set PGDATA=%~dp0\data
+set PGDATABASE=postgres
+set PGUSER=postgres
+set PGPORT=5439
+set PGLOCALEDIR=%~dp0\share\locale
+"%~dp0\bin\initdb" -U postgres -A trust
+"%~dp0\bin\pg_ctl" -D "%~dp0/data" -l logfile start
+echo "#### Ready. Press space to shutdown..."
+pause &gt; null
+"%~dp0\bin\pg_ctl" -D "%~dp0/data" stop</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are wondering, <code>%~dp0</code> variable return the current directory&#8201;&#8212;&#8201;that is, the directory where the .bat file is being executed.</p>
+</div>
+<div class="paragraph">
+<p><strong>WARNING</strong>: The first run of this script will initialize the database in the <code>%PGDATA%</code> directory with the <code>initdb</code> line. <em>For the following launches, remember to comment that line</em>, otherwise you&#8217;ll see some error message popping up.</p>
+</div>
+<div class="paragraph">
+<p>At this point, I am basically done: I&#8217;ll just create Desktop launchers for both this .bat file and the pgAdmin.exe file that you can find in <code>bin\</code>. As you can understand my need is to launch and terminate the server on-demand.</p>
+</div>
+<div class="paragraph">
+<p>However, other people may want to launch Postgres as system service or scheduled task (at startup). If that&#8217;s the case, I suggest to create a startup task in Windows' Task Scheduler in Control Panel.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_db_server_to_use_a_small_comparison">What DB server to use? a small comparison</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Few words on why I chose Postgres? Basically, because it is mantained and popular, it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless&#8201;&#8212;&#8201;as you can see. Also, apparently it is the most lightweight of all: my home machine is not that great&#8201;&#8212;&#8201;it&#8217;s a desktop-replacement laptop from 2012 with Windows 7, so no heavy loads thank you :-).
+In general the choice was limited to the followings:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -75,56 +121,10 @@ The choice was limited to the followings:</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>In the end I decided to go with Postgres: it is the one I felt more confortable together with MySQL, with the advantage that installing it on Windows is relatively painless.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_install_and_configure_portable_postgres">Install and configure 'portable' Postgres</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>On my Windows pc I like to micromanage the system and keep things tidy. If a software I need offers the 'zip' binary archive to download instead of any MSI/EXE installer, I usually go that way.</p>
+<p>The drawbacks of using a SQL RDBMS instead of a NoSQL db is that <em>it is more complicated</em>. You have not only to manage relational data in SQL transactions (which don&#8217;t always map easily to object-oriented patterns, regardless of what you thing of ORM libraries), but also you have to account for Schema formatting and preparation in your app, database migrations and so on.</p>
 </div>
 <div class="paragraph">
-<p>I put normal software blobs in a <code>C:\opt</code> folder, and if it is developement-related software, I use the  <code>C:\workspace\opt</code> folder (as <code>C:\workspace</code> is the root of all my code). Yes yes I know, bad habits from Linux&#8230;&#8203; moving on :P</p>
-</div>
-<div class="paragraph">
-<p>It happens that Pg offers precisely this: <a href="https://www.enterprisedb.com/download-postgresql-binaries" class="bare">https://www.enterprisedb.com/download-postgresql-binaries</a>. So time to download the <em>Win-x86-64</em> blob for version 9.5.6 and unpack it.</p>
-</div>
-<div class="paragraph">
-<p>The binary blob provides not only the Pg commands, but also the handy pgAdminIII frontend. In the root folder of the unpacked software (in my case, <code>C:\workspace\opt\postgres-9.5.6\</code>), then, create the batch file <code>launch_pg.bat</code> with this content:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>REM contents
-@echo off
-set PATH="%~dp0\bin";%PATH%
-set PGDATA=%~dp0\data
-set PGDATABASE=postgres
-set PGUSER=postgres
-set PGPORT=5439
-set PGLOCALEDIR=%~dp0\share\locale
-"%~dp0\bin\initdb" -U postgres -A trust
-"%~dp0\bin\pg_ctl" -D "%~dp0/data" -l logfile start
-echo "#### Ready. Press space to shutdown..."
-pause &gt; null
-"%~dp0\bin\pg_ctl" -D "%~dp0/data" stop</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you are wondering, <code>%~dp0</code> variable return the current directory&#8201;&#8212;&#8201;that is, the directory where the .bat file is being executed.</p>
-</div>
-<div class="paragraph">
-<p><strong>WARNING</strong>: The first run of this script will initialize the database in the %PGDATA% directory with the <code>initdb</code> line. <em>For the following launches, remember to comment that line</em>.</p>
-</div>
-<div class="paragraph">
-<p>At this point, I am basically done: I&#8217;ll just create Desktop launchers for both this .bat file and the pgAdmin.exe file that you can find in bin\. As you can understand my need is to launch (and terminate) Pg on-demand.</p>
-</div>
-<div class="paragraph">
-<p>However, other people may want to launch Pg as system service or scheduled task (at startup). If that&#8217;s the case, I suggest to create a startup task in Windows' Task Scheduler in Control Panel.</p>
-</div>
-<div class="paragraph">
-<p>In a next blog post, I will discuss how I managed to manage Postgres (via a connection-pool) using the canonical Java JDBC way. Stay tuned!</p>
+<p>In a next blog post, I will discuss how I manage Postgres (via a connection-pool) using the canonical Java JDBC way. Stay tuned!</p>
 </div>
 </div>
 </div>]]></description><link>https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2017/04/23/Portable-PostgreSQL-distribution-for-Windows.html</guid><category><![CDATA[Postgres]]></category><category><![CDATA[ Windows]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sun, 23 Apr 2017 00:00:00 GMT</pubDate></item><item><title><![CDATA[Generating Docker artifacts in your Java project]]></title><description><![CDATA[<div id="preamble">
