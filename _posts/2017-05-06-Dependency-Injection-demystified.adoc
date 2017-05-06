@@ -1,4 +1,4 @@
-= Dependency Injection demistified
+= Dependency Injection demystified
 
 :hp-tags: Java, Guice, Maven
 
@@ -7,7 +7,7 @@ I'm going to write a quick walthrough post on what is DI, what problems it is tr
 == What does DI mean
 In a https://carlomorelli.github.io/2017/04/23/Easily-designing-the-DB-connection-from-Java.html[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: `Factory::getPostgresDataSource` and `Factory::getH2DataSource`.
 
-This DataSource impl is used in the app code. Let's assume for a moment that my app runs with a normal p.s.v. `main()` funcion in a certain `App` class. That is, assume we have something like this:
+This DataSource impl is used in the app code. Let's assume for a moment that my app runs with a normal p.s.v. `main()` funcion in the `App` class. That is, we have something like this:
 ```
 public class App {
     public static void main(String... args) {
@@ -18,7 +18,9 @@ public class App {
     }
 }
 ```
-If all it was like this, it would not be such a pain after all. However, things get complicated when it is not the frontend `App` class that uses the DataSource object, but some internal class. For example, a common pattern in enterprise Java is to have a Repository class that abstracts data manipulation for the frontend `App` class -- there are several reasons why this makes sense, like for example the mantainability according to SOLID design.
+In this case switching from a DataSource implementation to the other would not be such a pain after all.
+
+However, things get complicated when it is not the frontend `App` class that uses the DataSource object, but some internal class. For example, a common pattern in enterprise Java is to have a Repository class that abstracts data manipulation for the frontend `App` class -- there are several reasons why this makes sense, like for example the mantainability according to SOLID design.
 So let's assume instead that `App` has a reference to `Repository` and that it is `Repository` that needs a `DataSource` instance. Something like:
 ```
 public class App {
@@ -32,13 +34,13 @@ public class Repository {
     private DataSource ds;
 	public Repository() {
         ds = Factory.getH2DataSource();
-		.. constructor...    
+        ...constructor...    
     }
 }
 ```
 What happened now, is that the `DataSource` is not manageable anymore from the frontend. Granted, if we want to change the `DataSource` impl to be the `Factory::getPostgresDataSource` instead of the original, we can go to the `Repository` class and tweak the `ds = ...` line. The problem is that if there are more other "middlemen" in the app structure other than `Repository`, that need to use a `DataSource` instance, things will go awry pretty soon: if by mistake we are using, say,  `DataSourceImpl1` in one part of the code and `DataSourceImpl2` in another part of the code, what is going to happen?
 
-So the only solution is to centralize somewhere the "configuration" of what `DataSource` implementation, say, in in the `App` class itself like we were doing originally, and to *inject* the chosen `DataSource` implementation from there into `Repository`. In other words: we have to change the `Repository` code so `DataSource` is *injected* in the constructor by the caller, instead of being created over there: 
+So the only solution is to centralize somewhere the "configuration" of what `DataSource` implementation we want to use, say, in in the `App` class itself like we were doing originally, and to *inject* the chosen `DataSource` implementation from there into `Repository`. In other words: we have to change the `Repository` code so that the `DataSource` *dependency* is *injected* in the constructor by the caller, instead of being created over there: 
 ```
 public class App {
     public static void main(String... args) {
@@ -56,7 +58,7 @@ public class Repository {
     }
 }
 ```
-This is basically what *Dependency Injection* is all about: _to make code more manageable, we centralise all chosen configuration of interfaces and inject it in cascade through the object constructors._
+This is basically what *Dependency Injection* is all about: _to make code more manageable, we centralize all chosen configuration of interfaces and inject it in cascade through the object constructors._
 
 == DI and Unit Testing
 When working in structured manner (the aforementioned SOLID method), DI is very useful for unit testing. We can test separately pieces of code and mock the needed resources. In my case, I want that `Repository` uses the Postgres d.s. in the real world scenario, but the H2 d.s. in unittests. Unit testing then is relatively easy:
@@ -73,10 +75,10 @@ public class RepositoryTest {
     @Test
     public void test1() {
         repo = new Repository(ds);
-        .... test ...
+        ...test content...
     }
     
-    ... other tests...
+    ...other tests...
 }
 ```
 Of course it could be the case to totally create a database mock (e.g. using Mockito) instead of relying on H2 for testing. It does not matter though, because in the `@Before` function we would just write `ds = mock(DataSource.class)` instead of taking an implementation from `Factory`, but the injection of `ds` into `Repository` would still be done in the same way (the tests would not change... nice!).
@@ -84,7 +86,7 @@ Of course it could be the case to totally create a database mock (e.g. using Moc
 == Google Guice
 Dependency Injection as a concept is not difficult to grasp. However, complex projects need to inject multitudes of configurations in multiple different places, and so DI easily becomes a burden.
 
-Google Guice to the rescue! Guice is a DI framework oriented to simplicity and in-code configuration through the power of decorators. First, we need to add the dependency to the project `pom.xml`:
+Google Guice to the rescue! Guice is a DI framework oriented to simplicity and in-code configuration _through the power of decorators_. First, we need to add the dependency to the project `pom.xml`:
 ```
     <dependency>
         <groupId>com.google.inject</groupId>
@@ -105,7 +107,7 @@ The `bind(this).to(that)` DSL is very readable and intuitive: the `this` must be
 
 More precisely, you have to master few different variants: if you get the implementation from a factory (like in our example), you have to use the `.toInstance()` DSL, but if you get the implementation from a written class, the correct syntax is `.to()`.
 
-There is a little other step to do in the actuall `App` class code, and is to retrieve the configured implementation in `AppConfig` within the `App` class itself, using the `Guice::createInjector` function:
+There is a little other step to do in the actual `App` class code, and is to retrieve the configured implementation in `AppConfig` within the `App` class itself, using the `Guice::createInjector` function:
 ```
 public class App {
     public static void main(String... args) {
