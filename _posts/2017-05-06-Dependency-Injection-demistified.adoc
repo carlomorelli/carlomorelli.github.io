@@ -58,8 +58,29 @@ public class Repository {
 ```
 This is basically what *Dependency Injection* is all about: _to make code more manageable, we centralise all chosen configuration of interfaces and inject it in cascade through the object constructors._
 
-
-
+== DI and Unit Testing
+When working in structured manner (the aforementioned SOLID method), DI is very useful for unit testing. We can test separately pieces of code and mock the needed resources. In my case, I want that `Repository` uses the Postgres d.s. in the real world scenario, but the H2 d.s. in unittests. Unit testing then is relatively easy:
+```
+public class RepositoryTest {
+    private DataSource ds;
+    private Repository repo;
+    
+    @Before
+    public void prepare() {
+        ds = Factory.getH2DataSource(); 
+    }
+    
+    @Test
+    public void test1() {
+        repo = new Repository(ds);
+        .... test ...
+    }
+    
+    ... other tests...
+}
+```
+== Google Guice
+Dependency Injection as a concept is not difficult to grasp.
 
 
 
