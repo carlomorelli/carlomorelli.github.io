@@ -5,7 +5,7 @@
 I'm going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to manage it concisely in your project.
 
 == What does DI mean
-In a https://carlomorelli.github.io[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: `Factory::getPostgresDataSource` and `Factory::getH2DataSource`.
+In a https://carlomorelli.github.io/2017/04/23/Easily-designing-the-DB-connection-from-Java.html[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: `Factory::getPostgresDataSource` and `Factory::getH2DataSource`.
 
 This DataSource impl is used in the app code. Let's assume for a moment that my app runs with a normal p.s.v. `main()` funcion in a certain `App` class. That is, assume we have something like this:
 ```
