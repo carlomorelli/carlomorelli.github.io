@@ -1,4 +1,202 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Mon, 24 Apr 2017 07:04:46 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Untitled RSS Feed]]></title><description><![CDATA[Untitled RSS Feed]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Sat, 06 May 2017 19:35:06 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Dependency Injection demystified]]></title><description><![CDATA[<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>I&#8217;m going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to manage it concisely in your project.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_does_di_mean">What does DI mean</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a <a href="https://carlomorelli.github.io/2017/04/23/Easily-designing-the-DB-connection-from-Java.html">previous blog post</a> I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: <code>Factory::getPostgresDataSource</code> and <code>Factory::getH2DataSource</code>.</p>
+</div>
+<div class="paragraph">
+<p>This DataSource impl is used in the app code. Let&#8217;s assume for a moment that my app runs with a normal p.s.v. <code>main()</code> funcion in the <code>App</code> class. That is, we have something like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class App {
+    public static void main(String... args) {
+        DataSource ds = Factory.getH2DataSource();
+        // comment previous and uncomment next to switch to Postgres
+        //DataSource ds = Factory.getPostgresDataSource();
+        ...etc...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case switching from a DataSource implementation to the other would not be such a pain after all.</p>
+</div>
+<div class="paragraph">
+<p>However, things get complicated when it is not the frontend <code>App</code> class that uses the DataSource object, but some internal class. For example, a common pattern in enterprise Java is to have a Repository class that abstracts data manipulation for the frontend <code>App</code> class&#8201;&#8212;&#8201;there are several reasons why this makes sense, like for example the mantainability according to SOLID design.
+So let&#8217;s assume instead that <code>App</code> has a reference to <code>Repository</code> and that it is <code>Repository</code> that needs a <code>DataSource</code> instance. Something like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class App {
+    public static void main(String... args) {
+        Repository repo = new Repository();
+        ...etc...
+    }
+}
+
+public class Repository {
+    private DataSource ds;
+	public Repository() {
+        ds = Factory.getH2DataSource();
+        ...constructor...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>What happened now, is that the <code>DataSource</code> is not manageable anymore from the frontend. Granted, if we want to change the <code>DataSource</code> impl to be the <code>Factory::getPostgresDataSource</code> instead of the original, we can go to the <code>Repository</code> class and tweak the <code>ds = &#8230;&#8203;</code> line. The problem is that if there are more other "middlemen" in the app structure other than <code>Repository</code>, that need to use a <code>DataSource</code> instance, things will go awry pretty soon: if by mistake we are using, say,  <code>DataSourceImpl1</code> in one part of the code and <code>DataSourceImpl2</code> in another part of the code, what is going to happen?</p>
+</div>
+<div class="paragraph">
+<p>So the only solution is to centralize somewhere the "configuration" of what <code>DataSource</code> implementation we want to use, say, in in the <code>App</code> class itself like we were doing originally, and to <strong>inject</strong> the chosen <code>DataSource</code> implementation from there into <code>Repository</code>. In other words: we have to change the <code>Repository</code> code so that the <code>DataSource</code> <strong>dependency</strong> is <strong>injected</strong> in the constructor by the caller, instead of being created over there:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class App {
+    public static void main(String... args) {
+        DataSource ds = Factory.getH2DataSource();
+        Repository repo = new Repository(ds);
+        ...etc...
+    }
+}
+
+public class Repository {
+    private DataSource ds;
+	public Repository(DataSource ds) {
+		this.ds = ds;
+        .. constructor...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is basically what <strong>Dependency Injection</strong> is all about: <em>to make code more manageable, we centralize all chosen configuration of interfaces and inject it in cascade through the object constructors.</em></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_di_and_unit_testing">DI and Unit Testing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When working in structured manner (the aforementioned SOLID method), DI is very useful for unit testing. We can test separately pieces of code and mock the needed resources. In my case, I want that <code>Repository</code> uses the Postgres d.s. in the real world scenario, but the H2 d.s. in unittests. Unit testing then is relatively easy:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class RepositoryTest {
+    private DataSource ds;
+    private Repository repo;
+
+    @Before
+    public void prepare() {
+        ds = Factory.getH2DataSource();
+    }
+
+    @Test
+    public void test1() {
+        repo = new Repository(ds);
+        ...test content...
+    }
+
+    ...other tests...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Of course it could be the case to totally create a database mock (e.g. using Mockito) instead of relying on H2 for testing. It does not matter though, because in the <code>@Before</code> function we would just write <code>ds = mock(DataSource.class)</code> instead of taking an implementation from <code>Factory</code>, but the injection of <code>ds</code> into <code>Repository</code> would still be done in the same way (the tests would not change&#8230;&#8203; nice!).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_google_guice">Google Guice</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Dependency Injection as a concept is not difficult to grasp. However, complex projects need to inject multitudes of configurations in multiple different places, and so DI easily becomes a burden.</p>
+</div>
+<div class="paragraph">
+<p>Google Guice to the rescue! Guice is a DI framework oriented to simplicity and in-code configuration <em>through the power of decorators</em>. First, we need to add the dependency to the project <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.inject&lt;/groupId&gt;
+        &lt;artifactId&gt;guice&lt;/artifactId&gt;
+        &lt;version&gt;4.1.0&lt;/version&gt;
+    &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Secondly, with Guice the DI configuration must be done within a class extending the abstract class <code>AbstractModule</code> provided by the framework itself. Let&#8217;s call this class <code>AppConfig</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class AppConfig extends AbstractModule {
+    @Override
+    protected void configure() {
+        bind(DataSource.class).toInstance(Factory.getH2DataSource());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>bind(this).to(that)</code> DSL is very readable and intuitive: the <code>this</code> must be an interface, the <code>that</code> must be any implementation of that interface, that&#8217;s it!</p>
+</div>
+<div class="paragraph">
+<p>More precisely, you have to master few different variants: if you get the implementation from a factory (like in our example), you have to use the <code>.toInstance()</code> DSL, but if you get the implementation from a written class, the correct syntax is <code>.to()</code>.</p>
+</div>
+<div class="paragraph">
+<p>There is a little other step to do in the actual <code>App</code> class code, and is to retrieve the configured implementation in <code>AppConfig</code> within the <code>App</code> class itself, using the <code>Guice::createInjector</code> function:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>public class App {
+    public static void main(String... args) {
+        DataSource ds = Guice.createInjector(new AppConfig()).getInstance(DataSource.class);
+        Repository repo = new Repository(ds);
+        ...etc...
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So the net number of lines has slightly increased, but the DI configuration is now isolated in its own class. If we want to switch from H2 to Postgres, we just go to <code>AppConfig</code> and modify the line in <code>configure()</code> as <code>bind(DataSource.class).toInstance(Factory.getPostgresDataSource());</code> without even touching the Application itself or its dependencies.</p>
+</div>
+<div class="paragraph">
+<p>Needless to say, the very same approach can be done in unit testing: we can create an independent <code>TestConfig</code> class extending <code>AbstractModule</code>, and in the <code>RepositoryTest</code> discussed in the last section we would simply change the line in the <code>@Before</code> function like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>    @Before
+    public void prepare() {
+        ds = Guice.createInjector(new TestConfig()).getInstance(DataSource.class);
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and the tests would still work as they did previously, no line of code should be touched other than this.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_foreword">Foreword</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can see that DI is a very important piece of the puzzle in writing enterprise-quality code. In must be said though that it is a pattern coming from how Java (and C#) are structured and have traditionally been programmed&#8201;&#8212;&#8201;especially considering the evolution of those languagues and what became a pattern (DI) and what became an anti-pattern (not using DI when having multiple implementations of interfaces).</p>
+</div>
+<div class="paragraph">
+<p>Other languages don&#8217;t have interfaces and in those kind of languages DI management is simply impossible (as also mocking is impossible). Some of these, like Python, have evolved in time and even if they don&#8217;t provide interfaces, they provide Abstract Base Classes (ABCs) as injecting point, so DI and mocking <a href="https://www.youtube.com/watch?v=zqRd941NXlI">are possible</a>.</p>
+</div>
+<div class="paragraph">
+<p>Hope you liked my tutorial!</p>
+</div>
+</div>
+</div>]]></description><link>https://carlomorelli.github.io/2017/05/06/Dependency-Injection-demystified.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2017/05/06/Dependency-Injection-demystified.html</guid><category><![CDATA[Java]]></category><category><![CDATA[ Guice]]></category><category><![CDATA[ Maven]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sat, 06 May 2017 00:00:00 GMT</pubDate></item><item><title><![CDATA[Portable PostgreSQL distribution for Windows]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>For a personal project in Java I was using the well-known <a href="http://www.h2database.com/html/main.html">H2 database</a> (which is implemented in Java itself).</p>
