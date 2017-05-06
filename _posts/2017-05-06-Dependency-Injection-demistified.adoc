@@ -124,6 +124,12 @@ Needless to say, the very same approach can be done in unit testing: we can crea
         ds = Guice.createInjector(new TestConfig()).getInstance(DataSource.class); 
     }
 ```
+and the tests would still work as they did previously, no line of code should be touched other than this.
 
-using  
+== Foreword
+You can see that DI is a very important piece of the puzzle in writing enterprise-quality code. In must be said though that it is a pattern coming from how Java (and C#) are structured and have traditionally been programmed -- especially considering the evolution of those languagues and what became a pattern (DI) and what became an anti-pattern (not using DI when having multiple implementations of interfaces).
+
+Other languages don't have interfaces and in those kind of languages DI management is simply impossible (as also mocking is impossible). Some of these, like Python, have evolved in time and even if they don't provide interfaces, they provide Abstract Base Classes (ABCs) as injecting point, so DI and mocking https://www.youtube.com/watch?v=zqRd941NXlI[are possible].
+
+Hope you liked my tutorial! 
 
