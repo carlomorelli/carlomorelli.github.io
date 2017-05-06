@@ -79,8 +79,9 @@ public class RepositoryTest {
     ... other tests...
 }
 ```
+Of course it could be the case to totally create a database mock (e.g. using Mockito) instead of relying on H2 for testing. It does not matter though, because in the `prepare()` function we would just write `ds = mock(DataSource.class)` instead of taking an implementation from `Factory`, but the injection of `ds` into `Repository` would still be done in the same way (the tests would not change... nice!).
 == Google Guice
-Dependency Injection as a concept is not difficult to grasp.
+Dependency Injection as a concept is not difficult to grasp. However, managing even 
 
 
 
