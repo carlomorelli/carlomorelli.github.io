@@ -4,7 +4,12 @@
     "repositoryName": "carlomorelli.github.io",
     "branch": "master"
   },
+  "site": {},
+  "socialnetwork": {
+    "linkedin": "https://www.linkedin.com/in/carlo-morelli-453b288/",
+    "github": "https://github.com/carlomorelli"
+  },
   "theme": {
-    "name": "Casper"
+    "name": "casper"
   }
 }
