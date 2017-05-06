@@ -2,9 +2,64 @@
 
 :hp-tags: Java, Guice, Maven
 
-I'm going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to set it up quickly in your project.
+I'm going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to manage it concisely in your project.
 
-In a https://carlomorelli.github.io[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: Factory::getPostgresHikariCPDataSource and Factory::getH2DataSource.
+== What does DI mean
+In a https://carlomorelli.github.io[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: `Factory::getPostgresDataSource` and `Factory::getH2DataSource`.
 
-In the application code, i also have a Repository class which is build on top of the DataSource, whatever it is.
+This DataSource impl is used in the app code. Let's assume for a moment that my app runs with a normal p.s.v. `main()` funcion in a certain `App` class. That is, assume we have something like this:
+```
+public class App {
+    public static void main(String... args) {
+        DataSource ds = Factory.getH2DataSource();
+        // comment previous and uncomment next to switch to Postgres
+        //DataSource ds = Factory.getPostgresDataSource();
+        ...etc...
+    }
+}
+```
+If all it was like this, it would not be such a pain after all. However, things get complicated when it is not the frontend `App` class that uses the DataSource object, but some internal class. For example, a common pattern in enterprise Java is to have a Repository class that abstracts data manipulation for the frontend `App` class -- there are several reasons why this makes sense, like for example the mantainability according to SOLID design.
+So let's assume instead that `App` has a reference to `Repository` and that it is `Repository` that needs a `DataSource` instance. Something like:
+```
+public class App {
+    public static void main(String... args) {
+        Repository repo = new Repository();
+        ...etc...
+    }
+}
+
+public class Repository {
+    private DataSource ds;
+	public Repository() {
+        ds = Factory.getH2DataSource();
+		.. constructor...    
+    }
+}
+```
+What happened now, is that the `DataSource` is not manageable anymore from the frontend. Granted, if we want to change the `DataSource` impl to be the `Factory::getPostgresDataSource` instead of the original, we can go to the `Repository` class and tweak the `ds = ...` line. The problem is that if there are more other "middlemen" in the app structure other than `Repository`, that need to use a `DataSource` instance, things will go awry pretty soon: if by mistake we are using, say,  `DataSourceImpl1` in one part of the code and `DataSourceImpl2` in another part of the code, what is going to happen?
+
+So the only solution is to centralize somewhere the "configuration" of what `DataSource` implementation, say, in in the `App` class itself like we were doing originally, and to *inject* the chosen `DataSource` implementation from there into `Repository`. In other words: we have to change the `Repository` code so `DataSource` is *injected* in the constructor by the caller, instead of being created over there: 
+```
+public class App {
+    public static void main(String... args) {
+        DataSource ds = Factory.getH2DataSource();
+        Repository repo = new Repository(ds);
+        ...etc...
+    }
+}
+
+public class Repository {
+    private DataSource ds;
+	public Repository(DataSource ds) {
+		this.ds = ds;
+        .. constructor...    
+    }
+}
+```
+This is basically what *Dependency Injection* is all about: _to make code more manageable, we centralise all chosen configuration of interfaces and inject it in cascade through the object constructors._
+
+
+
+
+
 
