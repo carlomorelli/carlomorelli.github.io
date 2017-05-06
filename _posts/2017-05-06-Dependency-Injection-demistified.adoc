@@ -79,9 +79,51 @@ public class RepositoryTest {
     ... other tests...
 }
 ```
-Of course it could be the case to totally create a database mock (e.g. using Mockito) instead of relying on H2 for testing. It does not matter though, because in the `prepare()` function we would just write `ds = mock(DataSource.class)` instead of taking an implementation from `Factory`, but the injection of `ds` into `Repository` would still be done in the same way (the tests would not change... nice!).
+Of course it could be the case to totally create a database mock (e.g. using Mockito) instead of relying on H2 for testing. It does not matter though, because in the `@Before` function we would just write `ds = mock(DataSource.class)` instead of taking an implementation from `Factory`, but the injection of `ds` into `Repository` would still be done in the same way (the tests would not change... nice!).
+
 == Google Guice
-Dependency Injection as a concept is not difficult to grasp. However, managing even 
+Dependency Injection as a concept is not difficult to grasp. However, complex projects need to inject multitudes of configurations in multiple different places, and so DI easily becomes a burden.
 
+Google Guice to the rescue! Guice is a DI framework oriented to simplicity and in-code configuration through the power of decorators. First, we need to add the dependency to the project `pom.xml`:
+```
+    <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>4.1.0</version>
+    </dependency>
+```
+Secondly, with Guice the DI configuration must be done within a class extending the abstract class `AbstractModule` provided by the framework itself. Let's call this class `AppConfig`:
+```
+public class AppConfig extends AbstractModule {
+    @Override
+    protected void configure() {
+        bind(DataSource.class).toInstance(Factory.getH2DataSource());
+    }
+}
+```
+The `bind(this).to(that)` DSL is very readable and intuitive: the `this` must be an interface, the `that` must be any implementation of that interface, that's it!
 
+More precisely, you have to master few different variants: if you get the implementation from a factory (like in our example), you have to use the `.toInstance()` DSL, but if you get the implementation from a written class, the correct syntax is `.to()`.
+
+There is a little other step to do in the actuall `App` class code, and is to retrieve the configured implementation in `AppConfig` within the `App` class itself, using the `Guice::createInjector` function:
+```
+public class App {
+    public static void main(String... args) {
+        DataSource ds = Guice.createInjector(new AppConfig()).getInstance(DataSource.class);
+        Repository repo = new Repository(ds);
+        ...etc...
+    }
+}
+```
+So the net number of lines has slightly increased, but the DI configuration is now isolated in its own class. If we want to switch from H2 to Postgres, we just go to `AppConfig` and modify the line in `configure()` as `bind(DataSource.class).toInstance(Factory.getPostgresDataSource());` without even touching the Application itself or its dependencies. 
+
+Needless to say, the very same approach can be done in unit testing: we can create an independent `TestConfig` class extending `AbstractModule`, and in the `RepositoryTest` discussed in the last section we would simply change the line in the `@Before` function like this:
+```
+    @Before
+    public void prepare() {
+        ds = Guice.createInjector(new TestConfig()).getInstance(DataSource.class); 
+    }
+```
+
+using  
 
