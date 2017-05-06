@@ -1,0 +1,10 @@
+= Dependency Injection demistified
+
+:hp-tags: Java, Guice, Maven
+
+I'm going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to set it up quickly in your project.
+
+In a https://carlomorelli.github.io[previous blog post] I discussed how I was moving the database backend from a H2 instance to a fully fledged Pgsql with connection pooling. However I was going to keep the H2 conf for testing, so I end up with a static Factory class that can provide the desired DataSource implementation: Factory::getPostgresHikariCPDataSource and Factory::getH2DataSource.
+
+In the application code, i also have a Repository class which is build on top of the DataSource, whatever it is.
+
