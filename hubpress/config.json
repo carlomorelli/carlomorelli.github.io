@@ -4,7 +4,10 @@
     "repositoryName": "carlomorelli.github.io",
     "branch": "master"
   },
-  "site": {},
+  "site": {
+    "title": "Cauldron Lake",
+    "description": "Snips, gists and tricks, in no particular order"
+  },
   "socialnetwork": {
     "linkedin": "https://www.linkedin.com/in/carlo-morelli-453b288/",
     "github": "https://github.com/carlomorelli"
