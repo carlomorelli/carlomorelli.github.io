@@ -7,7 +7,18 @@ Nothing gets th heat up among programmers like the good old debate on Date and T
 This triggered me to make a little summary because a lots of things are not obvious, especially in Java where we have basically 3 official implementations from the JDK, and 1 semi-official from project JodaTime.
 
 == Historical sidetrack: UNIX time
+Since modern computer architectures started being rolled out in the 70's, more than anything else, a standardization on clock and time measuring was imperative.
+You may have noticed that when a BIOS is not assigned a date, it defaults to 1st January 1970. This is quite widespread: modern computer architecture start counting time, absolute time, from 1970 and the clock will reach the end of the range in 2038. This range, because was pionereed by the UNIX developers at MIT, is commonly referred as "UNIX time". This number is a 32 bit integer counting the seconds since 1st of January 1970.
+For more informations please check the Wikipedia article https://en.wikipedia.org/wiki/Unix_time[here].
+
+Example: at the time I am writing it is 07/22/2017 @ 3:46pm (UTC), which translates to UNIX time 1500738405.
+
+The computer clocks have an absolute reference to UNIX time, with granularity on 1 millisecond (ms). We are able to syncronize clocks among different computers in many ways (a.g. NTP protocol), but this is beyond the scope of this post. What you must picture in your head is basically the clock oscillator that ticks every millisecond to produre the absolute UNIX time.
+
+
+== java.util.Date and how to use it
 
 
 
-== 
+
+== Java8 new DateTime API
