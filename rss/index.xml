@@ -1,4 +1,125 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Cauldron Lake]]></title><description><![CDATA[Snips, gists and tricks, in no particular order]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Sat, 06 May 2017 19:47:05 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Dependency Injection demystified]]></title><description><![CDATA[<div id="preamble">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Cauldron Lake]]></title><description><![CDATA[Snips, gists and tricks, in no particular order]]></description><link>https://carlomorelli.github.io</link><generator>RSS for Node</generator><lastBuildDate>Sun, 01 Apr 2018 15:15:22 GMT</lastBuildDate><atom:link href="https://carlomorelli.github.io/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Audit licenses in your dependencies using licensescan-maven-plugin]]></title><description><![CDATA[<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Package management on the JDK since the introduction of Maven and Gradle is a goodness that many other dev platforms still can&#8217;t grasp. I&#8217;m thinking of you, pip+virtualenv hacky weirdness :)</p>
+</div>
+<div class="paragraph">
+<p>Recently as work I was tasked with the generic task of auditing the project code for possible Open Source license violations. At first this raised some eyebrows among us, as one thing that I rarely look at though is what license the library is released under. Also, nowadays we use these very rapid and easy to use frameworks like Spring Boot, where more and more dependencies are pulled without us end-users really controlling them.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, for a library user, a license is VERY important. It is also important for the code that you write, but the license of the dependency could even affect the licensing scheme of your own code. I&#8217;ll explain better in a moment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_license_spectrum_is_wide">The license spectrum is wide</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I don&#8217;t want to make a blog post about licenses, I am not an expert. All I know and I want to know is that, beside commercial "Closed Source" code (e.g. the Microsoft Windows code) the Open Source code can have a varying degree of copyleft. There are <em>permissive licenses</em>, like <strong>MIT</strong>, <strong>Apache 2.0</strong>, and <strong>BSD</strong>, which allow any fair use of their code (linked or embedded). There are <em>less permissive licenses</em> like the <strong>LGPL</strong> and the <strong>GPL with classpath exception</strong> that allow the code to be linked by any other code (so in Java terms, you can have dependencies with those licenses), but not embedded (as in copy-pasted).</p>
+</div>
+<div class="paragraph">
+<p>Finally there are licenses like the <strong>GPL</strong> and the <strong>AGPL</strong> which are considered <em>strong copyleft</em> and viral: if your code links a library with GPL code, then your code too should be licensed as GPL. This of course is acceptable if you are developing a open-source project, but it may be not if you are developing a commercial application.</p>
+</div>
+<div class="paragraph">
+<p>If we are talking about commercial applications, it is not even black and white, it really depends also on many things like: is your application a service, or a product? Is your application residing on the customer premises? is your application charged on usage or as flat? and so on and on.</p>
+</div>
+<div class="paragraph">
+<p>As you can understand the terrain here is very flacky, and <em>many commercial companies try to stay away from GPL and similar strong copyleft code</em>. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introducing_licensescan_maven_plugin">Introducing licensescan-maven-plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You would think that managing and auditing licenses in Java would be easy. The natural solution would be to use Maven during the CI builds. And this means, we are looking for a Maven plugin just like Jacoco, CheckStyle or similar.</p>
+</div>
+<div class="paragraph">
+<p>I found out, however, that it is not that easy :). Yes, you can produce a <code>mvn site</code> and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus <strong>maven-license-plugin</strong> for this (pretty fast and complete).</p>
+</div>
+<div class="paragraph">
+<p>But what I was looking for was an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like <a href="https://github.com/mrice/license-check" class="bare">https://github.com/mrice/license-check</a> and <a href="https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/" class="bare">https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/</a>. I could not make the first work, as the code seems unmaintained.</p>
+</div>
+<div class="paragraph">
+<p>So i said, let&#8217;s take two pidgeons with one stone: I will produce the plugin that I want and in the meantime I will also learn how to produce a Maven plugin myself.</p>
+</div>
+<div class="paragraph">
+<p>Again, turns out that the Maven documentation to write a plugin is not that easy, and I bounced a lot between the official <code>maven.org</code> documentation and StackOverflow.</p>
+</div>
+<div class="paragraph">
+<p>In the end, I was able to hack something that I think does the work. It is very basic, but has parametric configuration and I believe it is easy to use. You just need to follow the directions on the GitHub <a href="https://github.com/carlomorelli/licensescan-maven-plugin" class="bare">https://github.com/carlomorelli/licensescan-maven-plugin</a> Readme file. Here is a summary:</p>
+</div>
+<div class="paragraph">
+<p>1) Put the plugin configuration in your <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>&lt;plugin&gt;
+    &lt;groupId&gt;com.github.carlomorelli&lt;/groupId&gt;
+    &lt;artifactId&gt;licensescan-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;1.1&lt;/version&gt;
+    &lt;configuration&gt;
+      &lt;printLicenses&gt;true&lt;/printLicenses&gt;
+      &lt;blacklistedLicenses&gt;
+        &lt;license&gt;GNU Lesser General Public License&lt;/license&gt;
+        &lt;license&gt;GNU General Public License, v2.0&lt;/license&gt;
+      &lt;/blacklistedLicenses&gt;
+      &lt;failBuildOnBlacklisted&gt;true&lt;/failBuildOnBlacklisted&gt;
+    &lt;/configuration&gt;
+  &lt;/plugin&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>2) Put the JitPack repository in your pluginRepository management block&#8201;&#8212;&#8201;this is required as the plugin is not published on the official Maven Central yet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>  &lt;pluginRepositories&gt;
+    &lt;pluginRepository&gt;
+      &lt;id&gt;jitpack.io&lt;/id&gt;
+      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+    &lt;/pluginRepository&gt;
+  &lt;/pluginRepositories&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here is the outcome of <code>mvn clean compile</code> for a simple Spring Boot project I was using to test the plugin:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>[warn] BLACKLIST
+[warn] -----------------------
+[warn] Found 5 violations for license 'GNU Lesser General Public License':
+[warn]  - ch.qos.logback:logback-classic:1.1.11:compile
+[warn]  - ch.qos.logback:logback-core:1.1.11:compile
+[warn]  - org.hibernate:hibernate-core:5.0.12.Final:compile
+[warn]  - org.hibernate.common:hibernate-commons-annotations:5.0.1.Final:compile
+[warn]  - org.hibernate:hibernate-entitymanager:5.0.12.Final:compile
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 8.753 s
+[INFO] Finished at: 2018-04-01T17:02:01+02:00
+[INFO] Final Memory: 37M/430M
+[INFO] ------------------------------------------------------------------------</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_aftermath">Aftermath</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hacking Maven plugins is a strange thing. It feels OK, there is an automatic IoC managed by the Maven toolkit so passing parameters is not very difficult. But the documentation is a little bit lacky, so most of the times you are just guessing. Again, god bless StackOverflow.</p>
+</div>
+<div class="paragraph">
+<p>Also <em>I coded the plugin on Java 1.5 standard</em>. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, <strong>it really sucks</strong> to program with the old for loop style. If you ever take a look at the code, please be gentle with the Mojo code :)</p>
+</div>
+<div class="paragraph">
+<p>And by all means, contributions are welcome.</p>
+</div>
+</div>
+</div>]]></description><link>https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html</link><guid isPermaLink="true">https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html</guid><category><![CDATA[Java]]></category><category><![CDATA[ Maven]]></category><category><![CDATA[ Mojo]]></category><category><![CDATA[ Spring-boot]]></category><dc:creator><![CDATA[Carlo Morelli]]></dc:creator><pubDate>Sun, 01 Apr 2018 00:00:00 GMT</pubDate></item><item><title><![CDATA[Dependency Injection demystified]]></title><description><![CDATA[<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>I&#8217;m going to write a quick walthrough post on what is DI, what problems it is trying to solve, and how to manage it concisely in your project.</p>
