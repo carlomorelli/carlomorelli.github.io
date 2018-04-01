@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Audit licenses in your dependencies using licensescan-maven-plugin</title>
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Audit licenses in your dependencies using licensescan-maven-plugin">
+    <meta name="twitter:description" content="">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Audit licenses in your dependencies using licensescan-maven-plugin">
+    <meta property="og:description" content="">
+
+    <!-- <meta name="twitter:site" content="">
+
+<meta name="twitter:creator" content="">
+
+<meta name="google-site-verification" content="">
+
+<meta property="fb:admins" content="">
+ -->
+
+    <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="/apple-touch-icon-precomposed.png" rel="apple-touch-icon">
+
+    <link href="//fonts.googleapis.com/" rel="dns-prefetch">
+    <link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Open+Sans:700,400&subset=latin,latin-ext" rel="stylesheet">
+
+    <link rel="stylesheet" href="//carlomorelli.github.io/themes/ghostium/assets/css/main.min.css?v=1522595722154"/>
+    <link rel="stylesheet" href="//carlomorelli.github.io/themes/ghostium/assets/css/custom.css?v=1522595722154"/>
+    <link rel="stylesheet" href="//carlomorelli.github.io/themes/ghostium/assets/css/asciidoctor-foundation.css?v=1522595722154"/>
+
+
+
+
+    <script type="text/javascript">
+      var ga_ua = 'UA-XXXXX-X';
+      
+      var disqus_shortname = 'example';
+      
+      var enable_pjax = true;
+
+      // Pace Options
+      // ==============
+      window.paceOptions = {
+        catchupTime: 100,
+        minTime: 100,
+        elements: false,
+        restartOnRequestAfter: 500,
+        startOnPageLoad: false
+      }
+
+      // Ghostium Globals
+      // ==============
+      window.GHOSTIUM = {};
+      GHOSTIUM.haveGA = typeof ga_ua !== 'undefined' && ga_ua !== 'UA-XXXXX-X';
+      GHOSTIUM.haveDisqus = typeof disqus_shortname !== 'undefined' && disqus_shortname !== 'example';
+      GHOSTIUM.enablePjax = typeof enable_pjax !== 'undefined' ? enable_pjax : true;
+    </script>
+
+    <script src="//carlomorelli.github.io/themes/ghostium/assets/js/head-scripts.min.js?v=1522595722154"></script>
+
+    <link rel="canonical" href="https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html" />
+    <meta name="referrer" content="origin" />
+    
+    <meta property="og:site_name" content="Cauldron Lake" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Audit licenses in your dependencies using licensescan-maven-plugin" />
+    <meta property="og:description" content="Package management on the JDK since the introduction of Maven and Gradle is a goodness that many other dev platforms still can&amp;#8217;t grasp. I&amp;#8217;m thinking of you, pip+virtualenv hacky weirdness :) Recently as work I was tasked with the generic task of auditing the project code" />
+    <meta property="og:url" content="https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html" />
+    <meta property="article:tag" content="Java" />
+    <meta property="article:tag" content=" Maven" />
+    <meta property="article:tag" content=" Mojo" />
+    <meta property="article:tag" content=" Spring-boot" />
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Audit licenses in your dependencies using licensescan-maven-plugin" />
+    <meta name="twitter:description" content="Package management on the JDK since the introduction of Maven and Gradle is a goodness that many other dev platforms still can&amp;#8217;t grasp. I&amp;#8217;m thinking of you, pip+virtualenv hacky weirdness :) Recently as work I was tasked with the generic task of auditing the project code" />
+    <meta name="twitter:url" content="https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html" />
+    
+    <script type="application/ld+json">
+null
+    </script>
+
+    <meta name="generator" content="HubPress" />
+    <link rel="alternate" type="application/rss+xml" title="Cauldron Lake" href="https://carlomorelli.github.io/rss/" />
+  </head>
+  <body class="post-template tag-Java tag-Maven tag-Mojo tag-Spring-boot">
+
+    <button data-action="open-drawer" id="drawer-button" class="drawer-button"><i class="fa fa-bars"></i></button>
+    <nav tabindex="-1" class="drawer">
+      <div class="drawer-container">
+        <!--.drawer-search(role="search")-->
+        <ul role="navigation" class="drawer-list">
+          
+          <li class="drawer-list-item">
+            <a href="https://carlomorelli.github.io" data-pjax>
+              <i class="fa fa-home"></i>Home
+            </a>
+          </li>
+          <!-- <li class="drawer-list-item">
+            <a href="https://carlomorelli.github.io" title="Cauldron Lake" data-pjax>
+              <i class="fa fa-list-alt"></i>All posts
+            </a>
+          </li> -->
+          <li class="drawer-list-item">
+            <a href="https://carlomorelli.github.io/rss/">
+              <i class="fa fa-rss"></i>Subscribe to Feed
+            </a>
+          </li>
+          <li class="drawer-list-divider"></li>
+          <li class="drawer-list-item drawer-list-title">
+            Follow me
+          </li>
+          
+          
+          <li class="drawer-list-item">
+            <a href="https://github.com/carlomorelli" title="Github" target="_blank">
+              <i class="fa fa-github"></i>Github
+            </a>
+          </li>
+          <li class="drawer-list-item">
+            <a href="https://www.linkedin.com/in/carlo-morelli-453b288/" title="LinkedIn" target="_blank">
+              <i class="fa fa-linkedin"></i>LinkedIn
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="drawer-overlay"></div>
+    <main id="container" role="main" class="container">
+      <div class="surface">
+        <div class="surface-container">
+          <div data-pjax-container class="content">
+            
+<section class="wrapper wrapper-post">
+  <div class="wrapper-container">
+    <article itemscope itemtype="http://schema.org/BlogPosting" role="article" class="post post tag-Java tag-Maven tag-Mojo tag-Spring-boot">
+        <section class="post-container">
+          <header class="post-header">
+            <ul class="post-meta-list">
+              <li class="post-meta-item">
+                <time datetime="2018-04-01" itemprop="datePublished">
+                  17 hours ago
+                </time>
+              </li>
+                <li class="post-meta-item">
+                  <span class="tags"><i class="fa fa-tags"></i>
+                      <span>
+                      <a href="https://carlomorelli.github.io/tag/Java/">Java</a>, <a href="https://carlomorelli.github.io/tag/Maven/"> Maven</a>, <a href="https://carlomorelli.github.io/tag/Mojo/"> Mojo</a>, <a href="https://carlomorelli.github.io/tag/Spring-boot/"> Spring-boot</a></span>
+                  </span>
+                </li>
+              <li class="post-meta-item">
+                <a href="#disqus_thread" data-disqus-identifier="">Comments</a>
+              </li>
+            </ul>
+            <h1 itemprop="name headline" class="post-title"><a href="https://carlomorelli.github.io/2018/04/01/Audit-licenses-in-your-dependencies-using-licensescan-maven-plugin.html" itemprop="url" data-pjax title="Audit licenses in your dependencies using licensescan-maven-plugin">Audit licenses in your dependencies using licensescan-maven-plugin</a></h1>
+            <!--h2 itemprop="about" class="post-subtitle"></h2-->
+          </header>
+          <aside class="post-side">
+            <div class="post-author">
+                <a href="" class="post-author-avatar">
+                  <img src="https://avatars0.githubusercontent.com/u/6968441?v&#x3D;4" alt="Carlo Morelli">
+                </a>
+              <div class="post-author-info">
+                <a href="" class="post-author-name">
+                  Carlo Morelli
+                </a>
+                <p class="post-author-bio"></p>
+              </div>
+            </div>
+          </aside>
+          <div itemprop="articleBody" class="post-body">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Package management on the JDK since the introduction of Maven and Gradle is a goodness that many other dev platforms still can&#8217;t grasp. I&#8217;m thinking of you, pip+virtualenv hacky weirdness :)</p>
+</div>
+<div class="paragraph">
+<p>Recently as work I was tasked with the generic task of auditing the project code for possible Open Source license violations. At first this raised some eyebrows among us, as one thing that I rarely look at though is what license the library is released under. Also, nowadays we use these very rapid and easy to use frameworks like Spring Boot, where more and more dependencies are pulled without us end-users really controlling them.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, for a library user, a license is VERY important. It is also important for the code that you write, but the license of the dependency could even affect the licensing scheme of your own code. I&#8217;ll explain better in a moment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_license_spectrum_is_wide">The license spectrum is wide</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I don&#8217;t want to make a blog post about licenses, I am not an expert. All I know and I want to know is that, beside commercial "Closed Source" code (e.g. the Microsoft Windows code) the Open Source code can have a varying degree of copyleft. There are <em>permissive licenses</em>, like <strong>MIT</strong>, <strong>Apache 2.0</strong>, and <strong>BSD</strong>, which allow any fair use of their code (linked or embedded). There are <em>less permissive licenses</em> like the <strong>LGPL</strong> and the <strong>GPL with classpath exception</strong> that allow the code to be linked by any other code (so in Java terms, you can have dependencies with those licenses), but not embedded (as in copy-pasted).</p>
+</div>
+<div class="paragraph">
+<p>Finally there are licenses like the <strong>GPL</strong> and the <strong>AGPL</strong> which are considered <em>strong copyleft</em> and viral: if your code links a library with GPL code, then your code too should be licensed as GPL. This of course is acceptable if you are developing a open-source project, but it may be not if you are developing a commercial application.</p>
+</div>
+<div class="paragraph">
+<p>If we are talking about commercial applications, it is not even black and white, it really depends also on many things like: is your application a service, or a product? Is your application residing on the customer premises? is your application charged on usage or as flat? and so on and on.</p>
+</div>
+<div class="paragraph">
+<p>As you can understand the terrain here is very flacky, and <em>many commercial companies try to stay away from GPL and similar strong copyleft code</em>. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introducing_licensescan_maven_plugin">Introducing licensescan-maven-plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You would think that managing and auditing licenses in Java would be easy. The natural solution would be to use Maven during the CI builds. And this means, we are looking for a Maven plugin just like Jacoco, CheckStyle or similar.</p>
+</div>
+<div class="paragraph">
+<p>I found out, however, that it is not that easy :). Yes, you can produce a <code>mvn site</code> and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus <strong>maven-license-plugin</strong> for this (pretty fast and complete).</p>
+</div>
+<div class="paragraph">
+<p>But what I was looking for was an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like <a href="https://github.com/mrice/license-check" class="bare">https://github.com/mrice/license-check</a> and <a href="https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/" class="bare">https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/</a>. I could not make the first work, as the code seems unmaintained.</p>
+</div>
+<div class="paragraph">
+<p>So i said, let&#8217;s take two pidgeons with one stone: I will produce the plugin that I want and in the meantime I will also learn how to produce a Maven plugin myself.</p>
+</div>
+<div class="paragraph">
+<p>Again, turns out that the Maven documentation to write a plugin is not that easy, and I bounced a lot between the official <code>maven.org</code> documentation and StackOverflow.</p>
+</div>
+<div class="paragraph">
+<p>In the end, I was able to hack something that I think does the work. It is very basic, but has parametric configuration and I believe it is easy to use. You just need to follow the directions on the GitHub <a href="https://github.com/carlomorelli/licensescan-maven-plugin" class="bare">https://github.com/carlomorelli/licensescan-maven-plugin</a> Readme file. Here is a summary:</p>
+</div>
+<div class="paragraph">
+<p>1) Put the plugin configuration in your <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>&lt;plugin&gt;
+    &lt;groupId&gt;com.github.carlomorelli&lt;/groupId&gt;
+    &lt;artifactId&gt;licensescan-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;1.1&lt;/version&gt;
+    &lt;configuration&gt;
+      &lt;printLicenses&gt;true&lt;/printLicenses&gt;
+      &lt;blacklistedLicenses&gt;
+        &lt;license&gt;GNU Lesser General Public License&lt;/license&gt;
+        &lt;license&gt;GNU General Public License, v2.0&lt;/license&gt;
+      &lt;/blacklistedLicenses&gt;
+      &lt;failBuildOnBlacklisted&gt;true&lt;/failBuildOnBlacklisted&gt;
+    &lt;/configuration&gt;
+  &lt;/plugin&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>2) Put the JitPack repository in your pluginRepository management block&#8201;&#8212;&#8201;this is required as the plugin is not published on the official Maven Central yet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>  &lt;pluginRepositories&gt;
+    &lt;pluginRepository&gt;
+      &lt;id&gt;jitpack.io&lt;/id&gt;
+      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+    &lt;/pluginRepository&gt;
+  &lt;/pluginRepositories&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here is the outcome of <code>mvn clean compile</code> for a simple Spring Boot project I was using to test the plugin:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>[warn] BLACKLIST
+[warn] -----------------------
+[warn] Found 5 violations for license 'GNU Lesser General Public License':
+[warn]  - ch.qos.logback:logback-classic:1.1.11:compile
+[warn]  - ch.qos.logback:logback-core:1.1.11:compile
+[warn]  - org.hibernate:hibernate-core:5.0.12.Final:compile
+[warn]  - org.hibernate.common:hibernate-commons-annotations:5.0.1.Final:compile
+[warn]  - org.hibernate:hibernate-entitymanager:5.0.12.Final:compile
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 8.753 s
+[INFO] Finished at: 2018-04-01T17:02:01+02:00
+[INFO] Final Memory: 37M/430M
+[INFO] ------------------------------------------------------------------------</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_aftermath">Aftermath</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hacking Maven plugins is a strange thing. It feels OK, there is an automatic IoC managed by the Maven toolkit so passing parameters is not very difficult. But the documentation is a little bit lacky, so most of the times you are just guessing. Again, god bless StackOverflow.</p>
+</div>
+<div class="paragraph">
+<p>Also <em>I coded the plugin on Java 1.5 standard</em>. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, <strong>it really sucks</strong> to program with the old for loop style. If you ever take a look at the code, please be gentle with the Mojo code :)</p>
+</div>
+<div class="paragraph">
+<p>And by all means, contributions are welcome.</p>
+</div>
+</div>
+</div>
+          </div>
+          <footer class="post-footer">
+            <div itemprop="author" itemscope itemtype="http://schema.org/Person" class="post-author">
+                <a href="" class="post-author-avatar">
+                  <img itemprop="image" src="https://avatars0.githubusercontent.com/u/6968441?v&#x3D;4" alt="Carlo Morelli">
+                </a>
+              <div class="post-author-info">
+                <h4 class="post-footer-heading">Written By</h4>
+                <a href="" itemprop="url" class="post-author-name">
+                  <span itemprop="name">Carlo Morelli</span>
+                </a>
+                <p itemprop="description" class="post-author-bio"></p>
+                <p class="post-info">
+                  <b class="post-info-title">Published on</b>
+                  <time class="post-date">April 01, 2018</time>
+                </p>
+              </div>
+            </div>
+            <div class="post-social">
+              <h4 class="post-footer-heading">Spread the word</h4>
+              <a href="#" data-action="share-twitter"><i class="fa fa-fw fa-lg fa-twitter"></i></a>
+              <a href="#" data-action="share-facebook"><i class="fa fa-fw fa-lg fa-facebook"></i></a>
+              <a href="#" data-action="share-gplus"><i class="fa fa-fw fa-lg fa-google-plus"></i></a>
+            </div>
+          </footer>
+        </section>
+      <section itemprop="comment" class="post-comments">
+        <div id="disqus_thread"></div>
+      </section>
+    </article>
+
+    <footer role="contentinfo" class="footer">
+      <p><small>Copyright &copy; <span itemprop="copyrightHolder">Cauldron Lake</span>. 2018. All Rights Reserved.</small></p>
+      <p><small><a href="http://ghostium.oswaldoacauan.com/" target="_blank">Ghostium Theme</a> by <a href="http://twitter.com/oswaldoacauan" target="_blank">@oswaldoacauan</a></small></p>
+      <p><small>Adapted by <a href="https://twitter.com/mgreau">Maxime Gréau</a></small></p>
+      <p><small>Published with <a href="http://hubpress.io">HubPress</a></small></p>
+    </footer>
+  </div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js?v="></script> 
+      <script type="text/javascript">
+        jQuery( document ).ready(function() {
+          // change date with ago
+          jQuery('ago.ago').each(function(){
+            var element = jQuery(this).parent();
+            element.html( moment(element.text()).fromNow());
+          });
+        });
+
+        hljs.initHighlightingOnLoad();
+      </script>
+
+    <script src="//carlomorelli.github.io/themes/ghostium/assets/js/foot-scripts.min.js?v=1522595722154"></script>
+
+
+  </body>
+</html>
