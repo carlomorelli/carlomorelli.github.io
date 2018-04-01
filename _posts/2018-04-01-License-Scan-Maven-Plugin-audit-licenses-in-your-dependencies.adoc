@@ -1,0 +1,65 @@
+= LicenseScan Maven Plugin: audit licenses in your dependencies
+
+:hp-tags: Java, Maven, Mojo, Spring Boot
+
+Package management on the JDK since the introduction of Maven and Gradle is a goodness that many other dev platforms still can't grasp. I'm thinking of you weird pip+virtualenv hacky weirdness :) 
+
+Of course Maven Central only offers Open Source code. Typically for me choosing a OS library happens after a sequence involving: 1) finding on the web how to do what I want to do -- maybe, by also splitting the problem in few steps; 2) looking for one or more alternative libraries, reading their "Getting Started" and get an idea if they suit me or not, 3) audit the respective websites and Github repo (or whatever) to see if they are under active development. One thing that I rarely look at though is what *license* the library is released under. 
+
+Unfortunately, for a library user, a license is VERY important. It is also --by all means-- as a writer of code, so that when you open a Github repo, the first thing you are suggested to do is to choose a License for the code. But the license of the dependency is even more important than the license of the own code, as the license of the dependency could affect the licensing scheme of the own code itself. I'll explain better in a moment.
+
+== The license spectrum
+The Licenses spectrum is wide. I don't want to make a blog post about licenses, I am not an expert. All I know and I want to know is that, beside commercial "Closed Source" code (e.g. the Microsoft Windows code) the Open Source code can have a varying degree of copyleft. There are _permissive licenses_, like *MIT*, *Apache 2.0*, and *BSD*, which allow any fair use of their code (linked or embedded). There are _less permissive licenses_ like the *LGPL* and the *GPL with classpath exception* that allow the code to be linked by any other code (so in Java terms, you can have dependencies with those licenses), but not embedded (as in copy-pasted). 
+
+Finally there are licenses like the *GPL* and the *AGPL* which are considered _strong copyleft_ and viral: if your code links a library with GPL code, then your code too should be licensed as GPL. This of course is acceptable if you are developing a open-source project, but it may be not if you are developing a commercial application. 
+
+If we are talking about commercial applications, it is not even black and white, it really depends also on many things like: is your application a service, or a product? Is your application residing on the customer premises? is your application charged on usage or as flat? and so on and on. 
+
+As you can understand the terrain here is very flacky, and many commercial companies try to stay away from GPL and similar strong copyleft code. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well.
+
+== Introducing licensescan-maven-plugin
+Given the problem, you would think that managing and auditing licenses in Java would be easy. The natural solution would be to use Maven during the CI builds. And this means, we are looking for a Maven plugin just like Jacoco, CheckStyle or similar.
+
+I found out, however, that it is not that easy :). Yes, you can produce a `mvn site` and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus *maven-license-plugin* for this (pretty fast and complete).
+
+But what I was looking for was an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like https://github.com/mrice/license-check and https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/. I could not make the first work, as the code seems unmaintained. 
+
+So i said, let's take two pidgeons with one stone: I will produce the plugin that I want and in the meantime I will also learn how to produce a Maven plugin myself.
+
+Again, turns out that the Maven documentation to write a plugin is not that easy, and I bounced a lot between the official `maven.org` documentation and StackOverflow. 
+
+In the end, I was able to hack something that I think does the work. It is very basic, but has parametric configuration and I believe it is easy to use. You just need to add the following to 
+
+is an easy too
+After looking of the web for a whileI wrote this Maven plugin 
+
+
+There exists pieces of code with Commercial licenses, which we are not considering here, and which we will simply call "Closed Source". 
+
+
+
+and most of the times unintelligible. As coders, we are usually not interested with regulamentations and laws. However, a license dictates how a piece of source code should be treated 
+
+, and 4) picking the one making my choice and putting the 
+However, i've always felt that picking a library 
+
+
+The goodness doubles considering that in recent years we have been sorrounded by pretty good frameworks that hugely simplify the Java development process by offering opinionated solutions. We have Grails, Spring Boot, Dropwizard, Vert.X, Jooby, and so on.
+
+
+
+
+
+In the followings i'll take Spring Boot as main actor, as it is very popular right now.
+
+What Spring Boot (and the others) do is not actually reinventing the wheel. They simply produce a set of wrapping objects around de-facto standards. Would you use any different library for JSON than Jackson or Gson? Would you rely on a different webserver than Tomcat or Jetty or Undertow? Would you use different logging than Log4J or Logback? The answer is: only in toy projects, maybe. But here we want to build real enterprise applications, not toys.
+
+So, back to my pont: Spring Boot is 90% composed of preexisting libraries laying around Maven Central, the awesome 
+
+What these frameworks do is to offer a BOM (Bill of Materials) 
+
+Nothing gets th heat up among programmers like the good old debate on Date and Time. Just a few days ago I was discussing with a collague about a Date usage in an integration testcase that we were preparing. Date and Time are like the regular expression problem, at least for me: I understand of it work but cannot for the life of me memorize the rules of a regex, so 90% of times I have to google some stuff.
+
+This triggered me to make a little summary because a lots of things are not obvious, especially in Java where we have basically 3 official implementations from the JDK, and 1 semi-official from project JodaTime.
+
+== Historical sidetrack: UNIX time
