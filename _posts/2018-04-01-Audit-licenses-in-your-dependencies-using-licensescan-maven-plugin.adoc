@@ -80,6 +80,7 @@ Here is the outcome of `mvn clean compile` for a simple Spring Boot project I wa
 == Aftermath
 Hacking Maven plugins is a strange thing. It feels OK, there is an automatic IoC managed by the Maven toolkit so passing parameters is not very difficult. But the documentation is a little bit lacky, so most of the times you are just guessing. Again, god bless StackOverflow.
 
-Also _I coded the plugin on Java 1.5 standard_. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, *it really sucks* to program with the old for loop uglyness. 
+Also _I coded the plugin on Java 1.5 standard_. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, *it really sucks* to program with the old for loop style. If you ever take a look at the code, please be gentle with the Mojo code :)
 
-If you ever take a look at the code, please be gentle with the Mojo code :)
+And by all means, contributions are welcome.
+
