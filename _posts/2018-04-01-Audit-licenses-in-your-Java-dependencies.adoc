@@ -1,4 +1,4 @@
-= Audit licenses using licensescan-maven-plugin
+= Audit licenses in your Java dependencies
 
 :hp-tags: Java, Maven, Mojo, Spring-boot
 
@@ -16,11 +16,12 @@ If we are talking about commercial applications, it is not even black and white,
 
 As you can understand the terrain here is very flaky, and _many commercial companies try to stay away from GPL and similar strong copyleft code_. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well. So, you may end up being requested to audit code like it happened to me.
 
-== Introducing licensescan-maven-plugin
+== Maven license plugin
 You would think that managing and auditing licenses in Java would be easy. The natural solution would be to use Maven during the CI builds. And this means, we are looking for a Maven plugin just like Jacoco, CheckStyle or similar.
 
 I found out, however, that it is not that easy :). Yes, you can produce a `mvn site` and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus *maven-license-plugin* for this (pretty fast and complete). This is after all the solution that we adopted at my workplace.
 
+== Introducing licensescan-maven-plugin
 However, it would be really more useful to have an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like https://github.com/mrice/license-check and https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/. I could not make the first work, as the code seems unmaintained. 
 
 So i said, let's take two pidgeons with one stone: I will produce the plugin that I want and in the meantime I will also learn how to produce a Maven plugin myself.
@@ -79,7 +80,7 @@ Hacking Maven plugins is a strange thing. It feels OK, there is an automatic IoC
 
 Also _I coded the plugin on Java 1.5 standard_. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, *it really sucks* to program with the old for loop style. If you ever take a look at the code, please be gentle with the Mojo code :)
 
-Tests? Not yet unfortunately. Maybe in future step releases as I find a good way to test the code. I am experimenting with maven-plugin-test-harness but apparently it is something very ancient (I mean, it is based on JUnit 3.x ... ). 
+Tests? Not yet unfortunately. Maybe in future step releases as I find a good way to test the code. Right now I am experimenting with the official *maven-plugin-test-harness*, which is something very ancient (I mean, it is based on JUnit 3.x ... ), but allows to hijack the dependency injection for testing.
 
 And by all means, contributions are welcome.
 
