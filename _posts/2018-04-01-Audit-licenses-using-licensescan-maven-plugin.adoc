@@ -1,4 +1,4 @@
-= Audit licenses in your dependencies using licensescan-maven-plugin
+= Audit licenses using licensescan-maven-plugin
 
 :hp-tags: Java, Maven, Mojo, Spring-boot
 
@@ -8,29 +8,26 @@ Recently as work I was tasked with the generic task of auditing the project code
 
 Unfortunately, for a library user, a license is VERY important. It is also important for the code that you write, but the license of the dependency could even affect the licensing scheme of your own code. I'll explain better in a moment.
 
-
-
 == The license spectrum is wide
-I don't want to make a blog post about licenses, I am not an expert. All I know and I want to know is that, beside commercial "Closed Source" code (e.g. the Microsoft Windows code) the Open Source code can have a varying degree of copyleft. There are _permissive licenses_, like *MIT*, *Apache 2.0*, and *BSD*, which allow any fair use of their code (linked or embedded). There are _less permissive licenses_ like the *LGPL* and the *GPL with classpath exception* that allow the code to be linked by any other code (so in Java terms, you can have dependencies with those licenses), but not embedded (as in copy-pasted). 
-
+I don't want to make a blog post about licenses, I am not an expert. Keeping it simple: beside commercial "Closed Source" code (e.g. the Microsoft Windows code) the Open Source code can have a varying degree of copyleft. There are _permissive licenses_, like *MIT*, *Apache 2.0*, and *BSD*, which allow any fair use of their code (linked or embedded). There are _less permissive licenses_ like the *LGPL* and the *GPL with classpath exception* that allow the code to be linked by any other code (so in Java terms, you can have dependencies with those licenses), but not embedded (or, more likely copy-pasted). 
 Finally there are licenses like the *GPL* and the *AGPL* which are considered _strong copyleft_ and viral: if your code links a library with GPL code, then your code too should be licensed as GPL. This of course is acceptable if you are developing a open-source project, but it may be not if you are developing a commercial application. 
 
 If we are talking about commercial applications, it is not even black and white, it really depends also on many things like: is your application a service, or a product? Is your application residing on the customer premises? is your application charged on usage or as flat? and so on and on. 
 
-As you can understand the terrain here is very flacky, and _many commercial companies try to stay away from GPL and similar strong copyleft code_. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well.
+As you can understand the terrain here is very flaky, and _many commercial companies try to stay away from GPL and similar strong copyleft code_. Moreso, the commercial code embedding or linking open source code is required to attach the Licenses of the dependencies with the delivery software as well. So, you may end up being requested to audit code like it happened to me.
 
 == Introducing licensescan-maven-plugin
 You would think that managing and auditing licenses in Java would be easy. The natural solution would be to use Maven during the CI builds. And this means, we are looking for a Maven plugin just like Jacoco, CheckStyle or similar.
 
-I found out, however, that it is not that easy :). Yes, you can produce a `mvn site` and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus *maven-license-plugin* for this (pretty fast and complete).
+I found out, however, that it is not that easy :). Yes, you can produce a `mvn site` and retrieve all dependencies and transitive dependencies on your project, including the licenses, and audit that potentially huge list. You can actually easily use the official CodeHaus *maven-license-plugin* for this (pretty fast and complete). This is after all the solution that we adopted at my workplace.
 
-But what I was looking for was an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like https://github.com/mrice/license-check and https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/. I could not make the first work, as the code seems unmaintained. 
+However, it would be really more useful to have an automated way to alert me if my project was using dependency artifacts with permissive or non permissive licenses and potentially fail the build. Surprisingly, the web was not very generous and I only found out about sparse experiments like https://github.com/mrice/license-check and https://www.ayoy.se/en/blog/2017/10-27-maven-license-plugin/. I could not make the first work, as the code seems unmaintained. 
 
 So i said, let's take two pidgeons with one stone: I will produce the plugin that I want and in the meantime I will also learn how to produce a Maven plugin myself.
 
 Again, turns out that the Maven documentation to write a plugin is not that easy, and I bounced a lot between the official `maven.org` documentation and StackOverflow. 
 
-In the end, I was able to hack something that I think does the work. It is very basic, but has parametric configuration and I believe it is easy to use. You just need to follow the directions on the GitHub https://github.com/carlomorelli/licensescan-maven-plugin Readme file. Here is a summary:
+In the end, I was able to hack something in the last two weeks on my own, that I think does the work. It is very basic, but has parametric configuration and I believe it is easy to use. You just need to follow the directions on the GitHub https://github.com/carlomorelli/licensescan-maven-plugin Readme file. Here is a summary:
 
 1) Put the plugin configuration in your `pom.xml`:
 ```
@@ -77,10 +74,13 @@ Here is the outcome of `mvn clean compile` for a simple Spring Boot project I wa
 [INFO] ------------------------------------------------------------------------
 ```
 
-== Aftermath
+== Few warnings
 Hacking Maven plugins is a strange thing. It feels OK, there is an automatic IoC managed by the Maven toolkit so passing parameters is not very difficult. But the documentation is a little bit lacky, so most of the times you are just guessing. Again, god bless StackOverflow.
 
 Also _I coded the plugin on Java 1.5 standard_. I am not sure if forcing 1.8 would have made things not working on older projects. What I am sure is that once you learn Java 8 streams, *it really sucks* to program with the old for loop style. If you ever take a look at the code, please be gentle with the Mojo code :)
 
+Tests? Not yet unfortunately. Maybe in future step releases as I find a good way to test the code. I am experimenting with maven-plugin-test-harness but apparently it is something very ancient (I mean, it is based on JUnit 3.x ... ). 
+
 And by all means, contributions are welcome.
+
 
